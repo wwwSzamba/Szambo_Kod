@@ -1,0 +1,76 @@
+<!DOCTYPE html>
+<html lang="pl">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>iwanan.gg - Porównaj się z Greatest Player of Today</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+    <header class="navbar">
+        <div class="container">
+            <div class="logo">iwanan<span>.GG</span></div>
+            <nav>
+                <ul>
+                    <li><a href="#" class="active">Home</a></li>
+                    <li><a href="#">Bohaterowie</a></li>
+                    <li><a href="#">Rankingi</a></li>
+                </ul>
+            </nav>
+        </div>
+    </header>
+
+    <main class="container">
+        <section class="search-section">
+            <img src="https://preview.redd.it/nah-id-win-v0-epcjymbbd3hc1.jpg?width=640&crop=smart&auto=webp&s=7e3054428206f862ddd30d6df0e28752295da965" alt="Mascot" class="hero-image">
+            <div class="search-bar">
+                <select class="region-select">
+                    <option value="eune">EUNE</option>
+                    <option value="euw">EUW</option>
+                    <option value="na">NA</option>
+                </select>
+                <input type="text" placeholder="Nazwa gracza + #TAG" class="search-input">
+                <button class="search-button">.GG</button>
+            </div>
+        </section>
+
+        <section class="comparison-section">
+            <h2 class="section-title">Porównanie Statystyk</h2>
+            
+            <div class="cards-container">
+                <div class="player-card user-card">
+                    <div class="card-header">
+                        <div class="avatar placeholder"></div>
+                        <div class="info">
+                            <h3>Twój Nick</h3>
+                            <span class="rank">Gold II</span>
+                        </div>
+                    </div>
+                    <div class="stats">
+                        <div class="stat-row"><span>Winrate:</span> <strong>52%</strong></div>
+                        <div class="stat-row"><span>KDA:</span> <strong>2.80:1</strong></div>
+                        <div class="stat-row"><span>CS/min:</span> <strong>6.5</strong></div>
+                    </div>
+                </div>
+
+                <div class="vs-badge">VS</div>
+
+                <div class="player-card pro-card">
+                    <div class="card-header">
+                        <div class="avatar iwanan-avatar"></div>
+                        <div class="info">
+                            <h3 class="pro-name">Tomasz "iwanan" Gaś</h3>
+                            <span class="rank challenger">Challenger 1200 LP</span>
+                        </div>
+                    </div>
+                    <div class="stats">
+                        <div class="stat-row"><span>Winrate:</span> <strong>68%</strong></div>
+                        <div class="stat-row"><span>KDA:</span> <strong>4.95:1</strong></div>
+                        <div class="stat-row"><span>CS/min:</span> <strong>9.8</strong></div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+</body>
+</html>

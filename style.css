@@ -1,0 +1,248 @@
+/* Zmienne CSS dla łatwiejszego zarządzania motywem (op.gg style) */
+:root {
+    --bg-main: #1c1c1f;
+    --bg-card: #31313c;
+    --bg-input: #ffffff;
+    --text-main: #ffffff;
+    --text-muted: #9e9eb1;
+    --accent-blue: #5383e8;
+    --accent-hover: #456ec4;
+    --challenger-gold: #f1c40f;
+}
+
+* {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+}
+
+body {
+    background-color: var(--bg-main);
+    color: var(--text-main);
+    line-height: 1.6;
+}
+
+.container {
+    max-width: 1080px;
+    margin: 0 auto;
+    padding: 0 20px;
+}
+
+/* Nawigacja */
+.navbar {
+    background-color: var(--accent-blue);
+    padding: 15px 0;
+}
+
+.navbar .container {
+    display: flex;
+    justify-content: flex-start;
+    align-items: center;
+    gap: 40px;
+}
+
+.logo {
+    font-size: 1.5rem;
+    font-weight: bold;
+}
+
+.logo span {
+    color: #a3c1ff;
+}
+
+nav ul {
+    list-style: none;
+    display: flex;
+    gap: 20px;
+}
+
+nav a {
+    color: var(--text-main);
+    text-decoration: none;
+    font-weight: 500;
+    opacity: 0.8;
+}
+
+nav a.active, nav a:hover {
+    opacity: 1;
+}
+
+/* Sekcja Wyszukiwania */
+.search-section {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    margin-top: 60px;
+    margin-bottom: 60px;
+}
+
+.hero-image {
+    width: 300px;
+    max-width: 100%;
+    margin-bottom: 30px;
+}
+
+.search-bar {
+    display: flex;
+    background-color: var(--bg-input);
+    border-radius: 30px;
+    overflow: hidden;
+    width: 100%;
+    max-width: 600px;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.3);
+}
+
+.region-select {
+    border: none;
+    padding: 15px 20px;
+    background: transparent;
+    font-weight: bold;
+    color: #333;
+    outline: none;
+    cursor: pointer;
+    border-right: 1px solid #ddd;
+}
+
+.search-input {
+    flex-grow: 1;
+    border: none;
+    padding: 15px;
+    font-size: 1rem;
+    outline: none;
+    color: #333;
+}
+
+.search-button {
+    background-color: var(--accent-blue);
+    color: white;
+    border: none;
+    padding: 0 30px;
+    font-weight: bold;
+    font-size: 1.1rem;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.search-button:hover {
+    background-color: var(--accent-hover);
+}
+
+/* Sekcja Porównania */
+.section-title {
+    text-align: center;
+    margin-bottom: 30px;
+    font-size: 1.8rem;
+}
+
+.cards-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 20px;
+    flex-wrap: wrap; /* Zapewnia responsywność */
+}
+
+.player-card {
+    background-color: var(--bg-card);
+    border-radius: 10px;
+    padding: 25px;
+    width: 350px;
+    flex-grow: 1;
+    max-width: 400px;
+    box-shadow: 0 4px 6px rgba(0,0,0,0.2);
+}
+
+.card-header {
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    margin-bottom: 20px;
+    padding-bottom: 15px;
+    border-bottom: 1px solid rgba(255,255,255,0.1);
+}
+
+.avatar {
+    width: 64px;
+    height: 64px;
+    border-radius: 50%;
+    background-color: #555; /* Placeholder */
+}
+
+.iwanan-avatar {
+    background: linear-gradient(45deg, var(--challenger-gold), #e67e22);
+}
+
+.info h3 {
+    margin: 0 0 5px 0;
+    font-size: 1.2rem;
+}
+
+.pro-name {
+    color: var(--challenger-gold);
+}
+
+.rank {
+    color: var(--text-muted);
+    font-size: 0.9rem;
+}
+
+.rank.challenger {
+    color: var(--challenger-gold);
+    font-weight: bold;
+}
+
+.stat-row {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 10px;
+    font-size: 1.1rem;
+}
+
+.stat-row span {
+    color: var(--text-muted);
+}
+
+.vs-badge {
+    background-color: var(--accent-blue);
+    color: white;
+    font-weight: bold;
+    font-size: 1.5rem;
+    width: 50px;
+    height: 50px;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    border-radius: 50%;
+    flex-shrink: 0;
+}
+
+/* Responsywność (Mobile-first podejście na zajęciach!) */
+@media (max-width: 768px) {
+    .navbar .container {
+        flex-direction: column;
+        gap: 15px;
+    }
+    
+    .cards-container {
+        flex-direction: column;
+    }
+    
+    .vs-badge {
+        margin: 10px 0;
+    }
+    
+    .search-bar {
+        border-radius: 15px;
+        flex-direction: column;
+    }
+    
+    .region-select {
+        border-right: none;
+        border-bottom: 1px solid #ddd;
+    }
+    
+    .search-button {
+        padding: 15px;
+    }
+}
