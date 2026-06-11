@@ -140,7 +140,7 @@
             // ----------------------------------------------------
             // 1. KLUCZ API 
             // ----------------------------------------------------
-            const API_KEY = "RGAPI-d03f4c8e-cfcb-494f-9e39-e35be664c3c4"; 
+            const API_KEY = "RGAPI-c936e3f9-c6ed-4082-aefd-5c61086bcab1"; 
 
             // ----------------------------------------------------
             // 2. USTAWIENIA DYNAMICZNYCH WYKRESÓW
@@ -190,6 +190,8 @@
             // ----------------------------------------------------
             // 3. POBIERANIE DANYCH Z RIOT API PRZEZ BEZPIECZNE PROXY
             // ----------------------------------------------------
+            const cache = {}; //  Obiekt przechowujący pamięć podręczną (cache)
+            
             let allPlayers = [];      
             let displayedCount = 0;   
             const LOAD_CHUNK = 100;   
@@ -199,6 +201,21 @@
             const loadMoreBtn = document.getElementById('load-more-btn');
 
             function fetchChallengers(region) {
+                
+                // Zanim wykonamy fetch, sprawdzamy czy region jest już w pamięci
+                if (cache[region]) {
+                    listContainer.innerHTML = '';
+                    allPlayers = cache[region];
+                    displayedCount = 0;
+                    loadMoreBtn.style.display = 'none';
+                    loadingText.innerText = `Dane wczytane z pamięci podręcznej (${region.toUpperCase()})`;
+                    loadingText.style.color = '#f1c40f'; // Żółty kolor aby zasygnalizować cache
+                    
+                    renderNextChunk();
+                    return; // Przerywamy funkcję, NIE WYSYŁAMY ponownego zapytania!
+                }
+                // ----------------------------
+
                 // Link bezpośredni do Riot API
                 const riotUrl = `https://${region}.api.riotgames.com/lol/league/v4/challengerleagues/by-queue/RANKED_SOLO_5x5?api_key=${API_KEY}`;
                 
@@ -229,7 +246,12 @@
 
                     if (!data.entries) throw new Error('Brak danych graczy w odpowiedzi');
                     
-                    allPlayers = data.entries.sort((a, b) => b.leaguePoints - a.leaguePoints);
+                    // ZAPIS DO CACHE ---
+                    // Sortujemy i zapisujemy gotowy wynik w pamięci (cache) pod nazwą regionu
+                    cache[region] = data.entries.sort((a, b) => b.leaguePoints - a.leaguePoints);
+                    allPlayers = cache[region];
+                
+
                     loadingText.innerText = `Sukces! Znaleziono w drabince: ${allPlayers.length} graczy!`;
                     loadingText.style.color = '#2ecc71';
                     
