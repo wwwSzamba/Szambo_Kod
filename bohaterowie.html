@@ -4,9 +4,13 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>iwanan.gg - Statystyki Bohaterów</title>
+
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="bohaterowie.css">
+    
+    <script src="champions.js"></script>
 </head>
+
 <body>
     <header class="navbar">
         <div class="container">
@@ -24,12 +28,14 @@
     <div class="container">
         <div class="search-section" style="margin-top: 40px; margin-bottom: 30px;">
             <h2 class="section-title" style="margin-bottom: 20px;">Sprawdź Statystyki Bohaterów</h2>
+
             <div class="search-bar">
                 <select class="region-select" id="region">
                     <option value="eune">EUNE</option>
                     <option value="euw">EUW</option>
                     <option value="na">NA</option>
                 </select>
+
                 <input type="text" class="search-input" id="riotId" placeholder="Nazwa gracza #TAG">
                 <button class="search-button" onclick="searchPlayer()">Szukaj</button>
             </div>
@@ -37,144 +43,125 @@
 
         <div id="results" style="display: none;">
             <div class="champion-grid-container">
-                <div class="champion-grid" id="championGrid">
-                    </div>
+                <div class="champion-grid" id="championGrid"></div>
             </div>
         </div>
     </div>
 
-    <script>
-        const API_KEY = "RGAPI-c936e3f9-c6ed-4082-aefd-5c61086bcab1"; 
+<script>
+const API_KEY = "RGAPI-c936e3f9-c6ed-4082-aefd-5c61086bcab1";
 
-        async function searchPlayer() {
-            const riotIdInput = document.getElementById('riotId').value.trim();
-            const regionVal = document.getElementById('region').value; 
-            
-            let accountRouting = 'europe';
-            if (regionVal === 'na') {
-                accountRouting = 'americas';
-            }
+async function searchPlayer() {
+    const riotIdInput = document.getElementById('riotId').value.trim();
+    const regionVal = document.getElementById('region').value;
 
-            const resultsDiv = document.getElementById('results');
-            const grid = document.getElementById('championGrid');
+    let accountRouting = 'europe';
+    if (regionVal === 'na') accountRouting = 'americas';
 
-            if (!riotIdInput.includes('#')) {
-                alert('Wpisz Riot ID w poprawnym formacie: Nazwa#TAG (np. Hide on bush#KR1)');
-                return;
-            }
+    const resultsDiv = document.getElementById('results');
+    const grid = document.getElementById('championGrid');
 
-            const [gameName, tagLine] = riotIdInput.split('#');
+    if (!riotIdInput.includes('#')) {
+        alert('Wpisz Riot ID w formacie: Nazwa#TAG');
+        return;
+    }
 
-            resultsDiv.style.display = 'block';
-            grid.innerHTML = '<p style="text-align:center; width:100%; color: #3498db; font-weight: bold;">Pobieranie ID konta z serwerów Riot...</p>';
+    const [gameName, tagLine] = riotIdInput.split('#');
 
-            try {
-                // 1. Pobieranie PUUID za pomocą Riot ID
-                const accountUrl = `https://${accountRouting}.api.riotgames.com/riot/account/v1/accounts/by-riot-id/${encodeURIComponent(gameName)}/${encodeURIComponent(tagLine)}?api_key=${API_KEY}`;
-                const accountRes = await fetch(accountUrl);
-                if (!accountRes.ok) throw new Error('Nie znaleziono gracza o podanym Riot ID.');
-                const accountData = await accountRes.json();
-                const puuid = accountData.puuid;
+    resultsDiv.style.display = 'block';
+    grid.innerHTML = 'Ładowanie...';
 
-                // 2. Pobieranie listy ID ostatnich 10 meczów
-                grid.innerHTML = '<p style="text-align:center; width:100%; color: #3498db; font-weight: bold;">Pobieranie historii meczów...</p>';
-                const matchIdsUrl = `https://${accountRouting}.api.riotgames.com/lol/match/v5/matches/by-puuid/${puuid}/ids?start=0&count=10&api_key=${API_KEY}`;
-                const matchIdsRes = await fetch(matchIdsUrl);
-                if (!matchIdsRes.ok) throw new Error('Błąd pobierania listy meczy.');
-                const matchIds = await matchIdsRes.json();
+    try {
+        const accountUrl = `https://${accountRouting}.api.riotgames.com/riot/account/v1/accounts/by-riot-id/${encodeURIComponent(gameName)}/${encodeURIComponent(tagLine)}?api_key=${API_KEY}`;
+        const accountRes = await fetch(accountUrl);
 
-                if (!matchIds || matchIds.length === 0) {
-                    grid.innerHTML = '<p style="text-align:center; width:100%; color: var(--text-muted);">Brak rozegranych meczów w ostatnim czasie.</p>';
-                    return;
-                }
+        if (!accountRes.ok) throw new Error('Nie znaleziono gracza');
 
-                // 3. Pobieranie szczegółów każdego meczu
-                grid.innerHTML = `<p style="text-align:center; width:100%; color: #3498db; font-weight: bold;">Analiza ${matchIds.length} ostatnich meczów...</p>`;
-                
-                const matchPromises = matchIds.map(matchId => {
-                    const matchUrl = `https://${accountRouting}.api.riotgames.com/lol/match/v5/matches/${matchId}?api_key=${API_KEY}`;
-                    return fetch(matchUrl).then(res => {
-                        if (!res.ok) throw new Error('Błąd pobierania szczegółów meczu.');
-                        return res.json();
-                    });
-                });
+        const accountData = await accountRes.json();
+        const puuid = accountData.puuid;
 
-                const matchesData = await Promise.all(matchPromises);
+        const matchIdsUrl = `https://${accountRouting}.api.riotgames.com/lol/match/v5/matches/by-puuid/${puuid}/ids?start=0&count=10&api_key=${API_KEY}`;
+        const matchIdsRes = await fetch(matchIdsUrl);
 
-                // 4. Analiza statystyk postaci
-                const championStats = calculateChampionStats(matchesData, puuid);
-                
-                // 5. Renderowanie widoku kart
-                renderChampions(championStats, matchIds.length);
+        if (!matchIdsRes.ok) throw new Error('Błąd meczy');
 
-            } catch (error) {
-                console.error(error);
-                grid.innerHTML = `<p style="text-align:center; color:#e74c3c; width:100%;">Wystąpił błąd: ${error.message}</p>`;
-            }
+        const matchIds = await matchIdsRes.json();
+
+        const matchPromises = matchIds.map(id =>
+            fetch(`https://${accountRouting}.api.riotgames.com/lol/match/v5/matches/${id}?api_key=${API_KEY}`)
+                .then(r => r.json())
+        );
+
+        const matchesData = await Promise.all(matchPromises);
+
+        const championStats = calculateChampionStats(matchesData, puuid);
+
+        renderChampions(championStats, matchIds.length);
+
+    } catch (err) {
+        grid.innerHTML = `<p style="color:red;">${err.message}</p>`;
+    }
+}
+
+function calculateChampionStats(matches, puuid) {
+    const stats = {};
+
+    matches.forEach(match => {
+        const p = match?.info?.participants.find(x => x.puuid === puuid);
+        if (!p) return;
+
+        if (!stats[p.championName]) {
+            stats[p.championName] = { name: p.championName, played: 0, wins: 0 };
         }
 
-        function calculateChampionStats(matches, puuid) {
-            const stats = {};
+        stats[p.championName].played++;
+        if (p.win) stats[p.championName].wins++;
+    });
 
-            matches.forEach(match => {
-                if (!match || !match.info) return; 
-                
-                const participant = match.info.participants.find(p => p.puuid === puuid);
-                if (!participant) return;
+    return Object.values(stats).sort((a, b) => b.played - a.played);
+}
 
-                const champName = participant.championName;
-                const win = participant.win;
+function renderChampions(championsData, totalMatchesAnalyzed) {
+    const grid = document.getElementById('championGrid');
+    grid.innerHTML = '';
 
-                if (!stats[champName]) {
-                    stats[champName] = { name: champName, played: 0, wins: 0 };
-                }
+    if (championsData.length === 0) {
+        grid.innerHTML = 'Brak danych';
+        return;
+    }
 
-                stats[champName].played += 1;
-                if (win) {
-                    stats[champName].wins += 1;
-                }
-            });
+    championsData.forEach(champ => {
+        const winRate = ((champ.wins / champ.played) * 100).toFixed(1);
+        const pickRate = ((champ.played / totalMatchesAnalyzed) * 100).toFixed(1);
 
-            return Object.values(stats).sort((a, b) => b.played - a.played);
-        }
+        const winRateColor = winRate >= 50 ? '#2ecc71' : '#e74c3c';
 
-        function renderChampions(championsData, totalMatchesAnalyzed) {
-            const grid = document.getElementById('championGrid');
-            grid.innerHTML = ''; 
+        const imageUrl = championImages[champ.name]
+            || "https://ddragon.leagueoflegends.com/cdn/14.8.1/img/profileicon/29.png";
 
-                if (championsData.length === 0) {
-                grid.innerHTML = '<p style="text-align:center; width:100%;">Nie znaleziono bohaterów w tych meczach.</p>';
-                return;
-            }
+        const card = document.createElement('div');
+        card.className = 'champion-image-container';
 
-            championsData.forEach(champ => {
-                const winRate = ((champ.wins / champ.played) * 100).toFixed(1);
-                const pickRate = ((champ.played / totalMatchesAnalyzed) * 100).toFixed(1);
-                
-                const winRateColor = winRate >= 50 ? '#2ecc71' : '#e74c3c';
-                
-                const card = document.createElement('div');
-                card.className = 'champion-image-container';
+        card.innerHTML = `
+            <div class="image-wrapper">
+                <img src="${imageUrl}" 
+                     alt="${champ.name}"
+                     onerror="this.src='https://ddragon.leagueoflegends.com/cdn/14.8.1/img/profileicon/29.png'">
 
-                const imageUrl = `https://ddragon.leagueoflegends.com/cdn/14.8.1/img/champion/${champ.name}.png`;
+                <div class="overlay">
+                    <div><strong style="color:${winRateColor}">${winRate}%</strong> WR</div>
+                    <div>Pick Rate: ${pickRate}%</div>
+                    <div>Zagrane: ${champ.played}</div>
+                </div>
+            </div>
 
-                card.innerHTML = `
-                    <div class="image-wrapper">
-                        <img src="${imageUrl}" alt="${champ.name}" onerror="this.src='https://ddragon.leagueoflegends.com/cdn/14.8.1/img/profileicon/29.png'">
-                        <div class="overlay">
-                            <div style="font-size: 14px; margin-bottom: 5px;">
-                                <strong style="color: ${winRateColor}">${winRate}%</strong> WR
-                            </div>
-                            <div>Pick Rate: <strong>${pickRate}%</strong></div>
-                            <div style="color: var(--text-muted); margin-top: 5px;">Zagrane: ${champ.played} / ${totalMatchesAnalyzed}</div>
-                        </div>
-                    </div>
-                    <div class="champion-name">${champ.name}</div>
-                `;
-                
-                grid.appendChild(card);
-            });
-        }
-    </script>
+            <div class="champion-name">${champ.name}</div>
+        `;
+
+        grid.appendChild(card);
+    });
+}
+</script>
+
 </body>
 </html>
