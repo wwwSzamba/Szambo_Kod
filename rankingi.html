@@ -40,14 +40,49 @@
             cursor: pointer;
             font-weight: bold;
             transition: all 0.3s ease;
-            display: none; /* Ukryty na start */
+            display: none; /* Domyślnie ukryty, pojawia się dopiero po załadowaniu danych */
         }
         .load-more-btn:hover { background: #3498db; color: white; }
         
-        /* Pasek przewijania */
+        /* Pasek przewijania wewnątrz listy graczy */
         .challenger-scroll-box::-webkit-scrollbar { width: 6px; }
         .challenger-scroll-box::-webkit-scrollbar-track { background: rgba(0,0,0,0.1); }
         .challenger-scroll-box::-webkit-scrollbar-thumb { background: #3498db; border-radius: 4px; }
+
+        /* --- RESPONSYWNOŚĆ (MOBILE-FIRST) --- */
+        
+        /* Domyślny układ dla małych ekranów (smartfony). Przyciski zawijają się do nowej linii dzięki flex-wrap. */
+        .region-tabs {
+            display: flex;
+            flex-wrap: wrap; 
+            gap: 8px;
+            justify-content: center;
+        }
+        .region-btn {
+            flex: 1 1 auto; 
+            padding: 8px 12px;
+            font-size: 0.85rem;
+            white-space: nowrap;
+        }
+
+        /* Domyślny układ grid dla smartfonów - jedna kolumna o pełnej szerokości (1fr) */
+        .ranking-grid {
+            display: grid;
+            grid-template-columns: 1fr;
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        /* Media Query modyfikujące układ dla ekranów o szerokości min. 992px (tablety/desktopy) */
+        @media (min-width: 992px) {
+            .ranking-grid {
+                grid-template-columns: 2fr 1fr; /* Zmiana na proporcję 2/3 (wykresy) do 1/3 (tabele) */
+                margin-top: 30px;
+            }
+            .region-btn {
+                font-size: 1rem;
+            }
+        }
     </style>
 </head>
 <body>
@@ -67,7 +102,7 @@
     <div class="container">
         <section class="region-selector" style="margin-top: 30px;">
             <div class="player-card" style="width: 100%; max-width: none; padding: 15px;">
-                <p style="color: var(--text-muted); font-size: 0.8rem; margin-bottom: 10px; text-transform: uppercase;">Wybierz region:</p>
+                <p style="color: var(--text-muted); font-size: 0.8rem; margin-bottom: 10px; text-transform: uppercase; text-align: center;">Wybierz region:</p>
                 <div class="region-tabs">
                     <button class="region-btn active" data-region="na1">North America</button>
                     <button class="region-btn" data-region="euw1">Europe West</button>
@@ -84,7 +119,7 @@
             <h2 style="font-size: 2.5rem; font-weight: 800; color: white;">Globalny Rozkład Rang</h2>
         </header>
 
-        <main class="ranking-grid" style="display: grid; grid-template-columns: 2fr 1fr; gap: 20px; margin-top: 30px;">
+        <main class="ranking-grid">
             <section class="charts-area">
                 <div class="player-card" style="margin-bottom: 20px; padding: 20px;">
                     <h3 style="color: var(--text-muted); font-size: 0.9rem; text-transform: uppercase; margin-bottom: 20px;">Tier distribution bar graph</h3>
@@ -137,17 +172,14 @@
 
     <script>
         document.addEventListener('DOMContentLoaded', function() {
-            // ----------------------------------------------------
-            // 1. KLUCZ API 
-            // ----------------------------------------------------
+            // Zmienna przechowująca klucz autoryzacyjny do interfejsu Riot Games
             const API_KEY = "RGAPI-c936e3f9-c6ed-4082-aefd-5c61086bcab1"; 
 
-            // ----------------------------------------------------
-            // 2. USTAWIENIA DYNAMICZNYCH WYKRESÓW
-            // ----------------------------------------------------
+            // Konfiguracja wykresów: Etykiety i odpowiadające im kolory
             const labels = ['Iron', 'Bronze', 'Silver', 'Gold', 'Platinum', 'Emerald', 'Diamond', 'Master+'];
             const colors = ['#7f8c8d', '#d35400', '#95a5a6', '#f1c40f', '#1abc9c', '#2ecc71', '#3498db', '#9b59b6'];
             
+            // Słownik z danymi procentowymi rozkładu rang w zależności od regionu
             const regionDistributions = {
                 'na1': [2.7, 16.4, 23.2, 24.8, 17.6, 10.4, 3.46, 1.16],
                 'euw1': [3.1, 15.2, 24.1, 23.5, 18.2, 11.1, 3.8, 1.0],
@@ -161,6 +193,7 @@
             let barChartInstance = null;
             let pieChartInstance = null;
 
+            // Inicjalizacja biblioteki Chart.js i wyrenderowanie początkowych wykresów w elementach <canvas>
             function initCharts() {
                 const initialData = regionDistributions['na1'];
                 
@@ -179,6 +212,7 @@
             }
             initCharts();
 
+            // Funkcja aktualizująca dane wykresów po zmianie regionu bez konieczności ponownego tworzenia obiektu wykresu
             function updateCharts(regionCode) {
                 const newData = regionDistributions[regionCode] || regionDistributions['na1'];
                 barChartInstance.data.datasets[0].data = newData;
@@ -187,41 +221,38 @@
                 pieChartInstance.update();
             }
 
-            // ----------------------------------------------------
-            // 3. POBIERANIE DANYCH Z RIOT API PRZEZ BEZPIECZNE PROXY
-            // ----------------------------------------------------
-            const cache = {}; //  Obiekt przechowujący pamięć podręczną (cache)
+            // Obiekt przechowujący historię zapytań do API (in-memory cache). Służy do ograniczania zapytań sieciowych.
+            const cache = {}; 
             
             let allPlayers = [];      
             let displayedCount = 0;   
-            const LOAD_CHUNK = 100;   
-
+            const LOAD_CHUNK = 100; // Ilość wierszy generowanych w pojedynczym cyklu renderowania
+            
             const listContainer = document.getElementById('challenger-list');
             const loadingText = document.getElementById('loading-text');
             const loadMoreBtn = document.getElementById('load-more-btn');
 
+            // Główna funkcja pobierająca listę graczy z wybranego regionu
             function fetchChallengers(region) {
-                
-                // Zanim wykonamy fetch, sprawdzamy czy region jest już w pamięci
+                // Sprawdzenie pamięci podręcznej. Jeśli dane dla tego regionu istnieją, pomijamy zapytanie do API.
                 if (cache[region]) {
                     listContainer.innerHTML = '';
                     allPlayers = cache[region];
                     displayedCount = 0;
                     loadMoreBtn.style.display = 'none';
                     loadingText.innerText = `Dane wczytane z pamięci podręcznej (${region.toUpperCase()})`;
-                    loadingText.style.color = '#f1c40f'; // Żółty kolor aby zasygnalizować cache
+                    loadingText.style.color = '#f1c40f'; 
                     
                     renderNextChunk();
-                    return; // Przerywamy funkcję, NIE WYSYŁAMY ponownego zapytania!
+                    return; 
                 }
-                // ----------------------------
 
-                // Link bezpośredni do Riot API
                 const riotUrl = `https://${region}.api.riotgames.com/lol/league/v4/challengerleagues/by-queue/RANKED_SOLO_5x5?api_key=${API_KEY}`;
                 
-                // Używamy endpointu /get, który ZAWSZE omija CORS i pakuje odpowiedź
+                // Użycie publicznego serwera proxy (allorigins) do owinięcia zapytania i uniknięcia blokady CORS narzucanej przez przeglądarkę
                 const apiUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(riotUrl)}`;
                 
+                // Resetowanie stanu interfejsu przed nowym zapytaniem
                 listContainer.innerHTML = '';
                 allPlayers = [];
                 displayedCount = 0;
@@ -235,22 +266,20 @@
                     return response.json();
                 })
                 .then(proxyData => {
-                    // Wypakowujemy paczkę od proxy
                     if (!proxyData.contents) throw new Error('Proxy nie zwróciło zawartości');
+                    
+                    // Rozkodowanie właściwej odpowiedzi od Riot API zawartej wewnątrz JSON-a z proxy
                     const data = JSON.parse(proxyData.contents);
 
-                    // Jeśli Riot odrzucił zapytanie (np. wygasł klucz), wyłapujemy to tutaj
                     if (data.status && data.status.status_code) {
                         throw new Error(`Błąd Riot API ${data.status.status_code}: ${data.status.message}`);
                     }
 
                     if (!data.entries) throw new Error('Brak danych graczy w odpowiedzi');
                     
-                    // ZAPIS DO CACHE ---
-                    // Sortujemy i zapisujemy gotowy wynik w pamięci (cache) pod nazwą regionu
+                    // Sortowanie wyników malejąco według posiadanych punktów League Points (LP)
                     cache[region] = data.entries.sort((a, b) => b.leaguePoints - a.leaguePoints);
                     allPlayers = cache[region];
-                
 
                     loadingText.innerText = `Sukces! Znaleziono w drabince: ${allPlayers.length} graczy!`;
                     loadingText.style.color = '#2ecc71';
@@ -258,34 +287,33 @@
                     renderNextChunk(); 
                 })
                 .catch(error => {
-                    // Wyświetla konkretny powód błędu na stronie
                     loadingText.innerText = error.message;
                     loadingText.style.color = '#e74c3c';
                     console.error("Szczegóły błędu:", error);
                 });
             }
 
-            // ----------------------------------------------------
-            // 4. BEZPIECZNE RYSOWANIE LISTY GRACZY (NOWY SYSTEM RIOT ID)
-            // ----------------------------------------------------
+            // Funkcja realizująca dynamiczne renderowanie węzłów DOM. 
+            // Chroni przed "zamrożeniem" przeglądarki poprzez renderowanie fragmentów (chunk) listy zamiast całej zawartości naraz.
             function renderNextChunk() {
                 const endIndex = Math.min(displayedCount + LOAD_CHUNK, allPlayers.length);
                 
                 for (let i = displayedCount; i < endIndex; i++) {
                     const player = allPlayers[i];
                     
-                    // Krok 1: Próba pobrania z nowego systemu Riot ID
+                    // Kaskadowa logika ustalania wyświetlanej nazwy gracza
+                    // 1. Sprawdzanie dostępności nowego standardu Riot ID
                     let displayName = player.riotIdGameName;
                     if (displayName && player.riotIdTagline) {
                         displayName += " #" + player.riotIdTagline;
                     }
                     
-                    // Krok 2: Obejście dla starszych kont (Summoner Name)
+                    // 2. Obejście wsteczne (fallback) dla kont korzystających ze starych struktur API
                     if (!displayName || displayName === "") {
                         displayName = player.summonerName;
                     }
 
-                    // Krok 3: Całkowity brak nazwy -> wyświetlamy fragment ID
+                    // 3. Fallback dla kont z ukrytymi/usuniętymi danymi
                     if (!displayName || displayName === "") {
                         const fallbackId = player.puuid || player.summonerId;
                         if (fallbackId) {
@@ -295,6 +323,7 @@
                         }
                     }
 
+                    // Dynamiczne generowanie struktury HTML i wstrzykiwanie do istniejącego kontenera
                     const itemHtml = `
                         <div class="challenger-item">
                             <span class="challenger-rank">#${i + 1}</span>
@@ -307,6 +336,7 @@
 
                 displayedCount = endIndex;
 
+                // Sprawdzenie, czy załadowano już całą tablicę graczy w celu ukrycia przycisku
                 if (displayedCount >= allPlayers.length) {
                     loadMoreBtn.style.display = 'none';
                 } else {
@@ -314,13 +344,13 @@
                 }
             }
 
+            // Podpięcie zdarzenia ładującego kolejną porcję danych
             loadMoreBtn.addEventListener('click', renderNextChunk);
 
-            // ----------------------------------------------------
-            // 5. OBSŁUGA PRZYCISKÓW REGIONÓW
-            // ----------------------------------------------------
+            // Pobranie wszystkich przycisków klasyfikujących regiony
             const buttons = document.querySelectorAll('.region-btn');
             
+            // Rejestracja zdarzeń kliknięcia, które inicjują proces wymiany wykresów oraz danych
             buttons.forEach(btn => {
                 btn.addEventListener('click', function() {
                     buttons.forEach(b => b.classList.remove('active'));
@@ -332,7 +362,7 @@
                 });
             });
 
-            // Start strony z domyślnym regionem
+            // Rozpoczęcie działania skryptu natychmiast po załadowaniu drzewa DOM
             fetchChallengers('na1');
         });
     </script>
