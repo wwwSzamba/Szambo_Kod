@@ -86,25 +86,38 @@
         //--------------
         //API KEY
         //--------------
-        const API_KEY = "RGAPI-d03f4c8e-cfcb-494f-9e39-e35be664c3c4";
+        const API_KEY = "RGAPI-c936e3f9-c6ed-4082-aefd-5c61086bcab1";
 
-        // Tier order for rank comparison (higher index = better)
+        /*
+          STAŁE DO ALGORYTMU PORÓWNAWCZEGO
+          Dzięki metodzie .indexOf() mogę później łatwo przekształcić tekstową 
+          rangę (np. 'GOLD') na wartość liczbową, co pozwala algorytmowi ocenić, 
+          która ranga jest wyższa."
+        */
         const TIER_ORDER = ["IRON", "BRONZE", "SILVER", "GOLD", "PLATINUM", "EMERALD", "DIAMOND", "MASTER", "GRANDMASTER", "CHALLENGER"];
         const DIVISION_ORDER = ["IV", "III", "II", "I"];
 
-        // Stored stats for comparison — populated once both players are loaded
         let userStats = null;
         let iwananStats = null;
 
+        /*
+          FUNKCJA getRankScore (ALGORYTM OCENIAJĄCY)
+          na jeden skompresowany wynik liczbowy (score). Najwyższa waga to ranga (* 10000), 
+          potem dywizja (* 1000), a na końcu LP. Dzięki temu matematyczne porównanie graczy jest trywialne."
+        */
         function getRankScore(tier, division, lp) {
             const tierIdx = TIER_ORDER.indexOf(tier?.toUpperCase());
-            if (tierIdx === -1) return -1; // Unranked = worst
+            if (tierIdx === -1) return -1; // Unranked = najgorszy wynik
             const divIdx = DIVISION_ORDER.indexOf(division?.toUpperCase());
-            // MASTER+ has no divisions, treat as division 0
+            // MASTER+ nie ma dywizji, traktujemy jako dywizję 0
             const divScore = divIdx === -1 ? 0 : divIdx;
             return tierIdx * 10000 + divScore * 1000 + (lp || 0);
         }
 
+        /*
+          MANIPULACJA DOM (Interfejs Użytkownika)
+          Reagują na zdarzenia kliknięcia (eventy) użytkownika, tworząc interaktywne elementy 
+        */
         function swapImages(newImage, oldImage) {
             if (!oldImage || !newImage) return;
             oldImage.classList.remove("hero-image");
@@ -129,9 +142,13 @@
             }
         }
 
-        // Returns true if user beats iwanan, false otherwise (iwanan wins all ties)
+        /*
+          LOGIKA BIZNESOWA: Porównanie graczy kaskadowo
+          Najpierw sprawdza rangę. Jeśli jest remis, schodzi niżej do winrate,
+          potem do KDA i tak dalej. To gwarantuje sprawiedliwy i logiczny werdykt."
+        */
         function isUserBetter(user, pro) {
-            // 1. Rank
+            // 1. Ranga
             const userRankScore = getRankScore(user.tier, user.division, user.lp);
             const proRankScore  = getRankScore(pro.tier,  pro.division,  pro.lp);
             if (userRankScore !== proRankScore) return userRankScore > proRankScore;
@@ -145,10 +162,11 @@
             // 4. CS/min
             if (user.cspm !== pro.cspm) return user.cspm > pro.cspm;
 
-            // All tied — iwanan wins
+            // Remis całkowity - Iwanan wygrywa jako 'boss'
             return false;
         }
 
+        // Funkcja wywołująca wizualną zmianę obrazka na podstawie wyniku
         function reactToComparison() {
             if (!userStats || !iwananStats) return;
 
@@ -162,14 +180,19 @@
             const userWins = isUserBetter(userStats, iwananStats);
 
             if (!userWins) {
-                // Iwanan wins
                 swapImages(checkBox.checked ? emojiWin : jjkWin, currentActiveImage);
             } else {
-                // User wins
                 swapImages(checkBox.checked ? emojiLoss : jjkLoss, currentActiveImage);
             }
         }
 
+        /*
+          ZAAWANSOWANA ASYNCHRONICZNOŚĆ I AGREGACJA
+          20 ostatnich gier z API (fetch). Jeśli gracz grał, wykorzystuję Promise.all() do 
+          równoległego pobrania szczegółów tych 20 meczów naraz (optymalizacja!). 
+          Następnie pętlą 'for...of' wyciągamy statystyki (kille, zgony, miniony, czas), 
+          odrzucam gry typu 'remake' (poniżej 5 minut) i agreguję wynik do postaci ułamkowej (KDA, CSPM)."
+        */
         async function fetchMatchStats(puuid, accountRouting) {
             // Pobierz ostatnie 20 gier rankingowych Solo/Duo (queue=420)
             const matchListUrl = `https://${accountRouting}.api.riotgames.com/lol/match/v5/matches/by-puuid/${puuid}/ids?queue=420&count=20&api_key=${API_KEY}`;
@@ -216,6 +239,12 @@
             return { kda, cspm };
         }
 
+        /*
+          DOMYŚLNE DANE SYSTEMOWE (BOSS)
+          zapytania o rangę z Riot API i historię meczów. 
+          Jeśli serwer odrzuci zapytanie (np. limit zapytań API), w bloku 'catch' przygotowałem tzw. 
+          Fallback (dane domyślne na twardo wpisane w kod), aby aplikacja się nie zawiesiła."
+        */
         async function fetchIwananData() {
             const gameName = "iwanan";
             const tagLine  = "7596";
@@ -278,16 +307,21 @@
                 document.getElementById("iwananWinRate").textContent  = "68%";
                 document.getElementById("iwananKDA").textContent      = "4.95:1";
                 document.getElementById("iwananCSPM").textContent     = "9.8";
-                // Fallback stats for comparison
+                // Fallback stats for comparison (W razie błędu sieci, kod zaciągnie sztywne statystyki)
                 iwananStats = { tier: "CHALLENGER", division: "I", lp: 999, winrate: 68, kda: 4.95, cspm: 9.8 };
                 reactToComparison();
             }
         }
 
+        /*
+          FUNKCJA GŁÓWNA UŻYTKOWNIKA
+          Jeśli wszystko zakończy się sukcesem (try), podmienia wartości w DOM i odpala algorytm porównawczy."
+        */
         async function fetchPlayerData() {
             const rawInput  = document.querySelector(".search-input").value.trim();
             const regionVal = document.querySelector(".region-select").value;
 
+            // Walidacja formularza
             if (!rawInput.includes("#")) {
                 alert("Wpisz Riot ID w poprawnym formacie: Nazwa#TAG (np. Hide on bush#KR1)");
                 return;
@@ -306,7 +340,7 @@
                 accountRouting  = "americas";
             }
 
-            // Reset UI
+            // Reset UI przed pobraniem nowych danych
             document.getElementById("user-winrate").textContent = "...";
             document.getElementById("user-kda").textContent     = "...";
             document.getElementById("user-cspm").textContent    = "...";
@@ -360,6 +394,7 @@
                 }
 
                 userStats = { tier, division, lp, winrate, kda, cspm };
+                // Kiedy obie strony (user i iwanan) są pobrane, wywołujemy porównanie
                 reactToComparison();
 
             } catch (err) {
@@ -371,6 +406,7 @@
             }
         }
 
+        // Event nasłuchujący momentu załadowania okna. Inicjuje pobranie statystyk "Iwanana".
         window.onload = fetchIwananData;
     </script>
 </body>
