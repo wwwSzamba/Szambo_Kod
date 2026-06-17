@@ -10,8 +10,7 @@ body {
     padding: 20px;
 }
 
-/* --- RESPONSYWNOŚĆ MOBILE-FIRST --- */
-/* 1. Domyślny układ dla małych ekranów (Telefony) - wymuszone 2 kolumny */
+/* 1. Domyślny układ dla małych ekranów (Telefony) - 2 kolumny */
 .champion-grid {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
@@ -21,7 +20,7 @@ body {
     width: 100%;
 }
 
-/* 2. Media Query dla większych ekranów (Tablety, Desktopy) - powrót do elastycznej siatki */
+/* Media Query dla większych ekranów (Tablety, Desktopy) -  elastyczna siatka */
 @media (min-width: 600px) {
     .champion-grid {
         grid-template-columns: repeat(auto-fit, minmax(140px, 1fr));
@@ -41,7 +40,7 @@ body {
     border: none;
     transition: transform 0.15s ease;
     width: 100%;
-    max-width: 180px; /* Zwiększone z 140px, aby ładnie wypełniać siatkę na telefonie */
+    max-width: 180px; 
     margin: 0 auto; /* Wyśrodkowanie karty w komórce grida */
 }
 
