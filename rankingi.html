@@ -202,8 +202,9 @@
             // Metoda do sukcesywnego zapełniania kontenera DOM. Minimalizuje zjawisko "zamrożenia" wątku 
             // operacyjnego w przeglądarce podczas parsowania dużych tablic (Lazy Rendering)
             function renderNextChunk() {
-                const endIndex = Math.min(displayedCount + LOAD_CHUNK, allPlayers.length); // aby zatrzymywało pętle bezpiecznie, np. displayuje 250 graczy a jeden loadchunk ma 100, to endIndex będzie 300, a my mamy tylko 250 graczy, 
-                                                                                            // wiec porownuje 350 i 300 i bierze mniejszy aby petla zatrzymala sie na 250
+                const endIndex = Math.min(displayedCount + LOAD_CHUNK, allPlayers.length); // w wiekszosci przypadkow wcztuje sie 300 graczy, ale w regionach mniejszych gdzie jest mniejszy playerbase
+                                                                                            // sa przypadki ze np. tylko 250 graczy wczyta do allplayers.length, wtedy do ochrony przed wyjsciem poza 
+                                                                                            // zakres tablicy, przyjmuje mniejsza wartosc z dwoch, czyli albo 100 albo allPlayers.length
                 
                 for (let i = displayedCount; i < endIndex; i++) {
                     const player = allPlayers[i]; // przypisuje z tablicy allplayers gracza o indeksie i do player aby można było go odczytać 
