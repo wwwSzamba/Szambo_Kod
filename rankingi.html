@@ -6,11 +6,11 @@
     <title>iwanan.gg - Rankingi</title>
     <link rel="stylesheet" href="style.css">
     <style>
-        /* Naprawa rozmiarów wykresów */
+        /* Ograniczenia i stylizacja obszaru wykresów */
         canvas { max-width: 100% !important; max-height: 300px !important; }
         .chart-container { position: relative; height: 300px; width: 100%; margin-bottom: 10px; }
         
-        /* Styl dla dynamicznej listy Challengerów */
+        /* Kontener listy graczy z wewnętrznym przewijaniem */
         .challenger-scroll-box {
             max-height: 400px;
             overflow-y: auto;
@@ -29,7 +29,7 @@
         .challenger-name { color: white; font-weight: bold; flex-grow: 1; }
         .challenger-lp { color: #f1c40f; font-weight: bold; }
         
-        /* Przycisk Załaduj Więcej */
+        /* Przycisk paginacji (Lazy Loading) */
         .load-more-btn {
             width: 100%;
             padding: 10px;
@@ -40,18 +40,17 @@
             cursor: pointer;
             font-weight: bold;
             transition: all 0.3s ease;
-            display: none; /* Domyślnie ukryty, pojawia się dopiero po załadowaniu danych */
+            display: none; 
         }
         .load-more-btn:hover { background: #3498db; color: white; }
         
-        /* Pasek przewijania wewnątrz listy graczy */
+        /* Niestandardowy pasek przewijania */
         .challenger-scroll-box::-webkit-scrollbar { width: 6px; }
         .challenger-scroll-box::-webkit-scrollbar-track { background: rgba(0,0,0,0.1); }
         .challenger-scroll-box::-webkit-scrollbar-thumb { background: #3498db; border-radius: 4px; }
 
-        /* --- RESPONSYWNOŚĆ (MOBILE-FIRST) --- */
         
-        /* Domyślny układ dla małych ekranów (smartfony). Przyciski zawijają się do nowej linii dzięki flex-wrap. */
+        /* Układ elastyczny dla nawigacji regionów na ekranach smartfonów */
         .region-tabs {
             display: flex;
             flex-wrap: wrap; 
@@ -65,7 +64,7 @@
             white-space: nowrap;
         }
 
-        /* Domyślny układ grid dla smartfonów - jedna kolumna o pełnej szerokości (1fr) */
+        /* Domyślny układ pionowy dla smartfonów (jedna kolumna) */
         .ranking-grid {
             display: grid;
             grid-template-columns: 1fr;
@@ -73,10 +72,10 @@
             margin-top: 20px;
         }
 
-        /* Media Query modyfikujące układ dla ekranów o szerokości min. 992px (tablety/desktopy) */
+        /* Adaptacja siatki dla ekranów o szerokości większej lub równej 992px */
         @media (min-width: 992px) {
             .ranking-grid {
-                grid-template-columns: 2fr 1fr; /* Zmiana na proporcję 2/3 (wykresy) do 1/3 (tabele) */
+                grid-template-columns: 2fr 1fr; 
                 margin-top: 30px;
             }
             .region-btn {
@@ -172,14 +171,13 @@
 
     <script>
         document.addEventListener('DOMContentLoaded', function() {
-            // Zmienna przechowująca klucz autoryzacyjny do interfejsu Riot Games
             const API_KEY = "RGAPI-16807741-f004-418b-b547-f9f038ac97bf"; 
 
-            // Konfiguracja wykresów: Etykiety i odpowiadające im kolory
+            // Dane konfiguracyjne dla wykresów Chart.js
             const labels = ['Iron', 'Bronze', 'Silver', 'Gold', 'Platinum', 'Emerald', 'Diamond', 'Master+'];
             const colors = ['#7f8c8d', '#d35400', '#95a5a6', '#f1c40f', '#1abc9c', '#2ecc71', '#3498db', '#9b59b6'];
             
-            // Słownik z danymi procentowymi rozkładu rang w zależności od regionu
+            // Sztywne dane percentylowe ułatwiające natychmiastowe ładowanie wykresów (bez opóźnień API)
             const regionDistributions = {
                 'na1': [2.7, 16.4, 23.2, 24.8, 17.6, 10.4, 3.46, 1.16],
                 'euw1': [3.1, 15.2, 24.1, 23.5, 18.2, 11.1, 3.8, 1.0],
@@ -193,7 +191,7 @@
             let barChartInstance = null;
             let pieChartInstance = null;
 
-            // Inicjalizacja biblioteki Chart.js i wyrenderowanie początkowych wykresów w elementach <canvas>
+            // Tworzenie instancji wykresów w drzewie DOM po załadowaniu strony
             function initCharts() {
                 const initialData = regionDistributions['na1'];
                 
@@ -212,7 +210,7 @@
             }
             initCharts();
 
-            // Funkcja aktualizująca dane wykresów po zmianie regionu bez konieczności ponownego tworzenia obiektu wykresu
+            // Metoda wykorzystująca wbudowany system mutacji Chart.js do płynnej animacji po zmianie zestawu danych
             function updateCharts(regionCode) {
                 const newData = regionDistributions[regionCode] || regionDistributions['na1'];
                 barChartInstance.data.datasets[0].data = newData;
@@ -221,20 +219,20 @@
                 pieChartInstance.update();
             }
 
-            // Obiekt przechowujący historię zapytań do API (in-memory cache). Służy do ograniczania zapytań sieciowych.
+            // In-memory cache zapobiegający redundancji zapytań sieciowych (wymóg: jedno żądanie per źródło)
             const cache = {}; 
             
             let allPlayers = [];      
             let displayedCount = 0;   
-            const LOAD_CHUNK = 100; // Ilość wierszy generowanych w pojedynczym cyklu renderowania
+            const LOAD_CHUNK = 100; // Optymalizacja renderowania: wstrzykiwanie maksymalnie 100 węzłów naraz
             
             const listContainer = document.getElementById('challenger-list');
             const loadingText = document.getElementById('loading-text');
             const loadMoreBtn = document.getElementById('load-more-btn');
 
-            // Główna funkcja pobierająca listę graczy z wybranego regionu
+            // Asynchroniczne odpytywanie API z obsługą pamięci podręcznej i wyjątków sieciowych
             function fetchChallengers(region) {
-                // Sprawdzenie pamięci podręcznej. Jeśli dane dla tego regionu istnieją, pomijamy zapytanie do API.
+                // Skrypt w pierwszej kolejności przeszukuje referencje obiektu cache
                 if (cache[region]) {
                     listContainer.innerHTML = '';
                     allPlayers = cache[region];
@@ -247,12 +245,10 @@
                     return; 
                 }
 
+                // Generowanie poprawnego adresu Endpointu i enkapsulacja go do proxy CORS (corsproxy.io)
                 const riotUrl = `https://${region}.api.riotgames.com/lol/league/v4/challengerleagues/by-queue/RANKED_SOLO_5x5?api_key=${API_KEY}`;
+                const apiUrl = `https://corsproxy.io/?${encodeURIComponent(riotUrl)}`;
                 
-                // Użycie publicznego serwera proxy (allorigins) do owinięcia zapytania i uniknięcia blokady CORS narzucanej przez przeglądarkę
-                const apiUrl = `https://api.allorigins.win/get?url=${encodeURIComponent(riotUrl)}`;
-                
-                // Resetowanie stanu interfejsu przed nowym zapytaniem
                 listContainer.innerHTML = '';
                 allPlayers = [];
                 displayedCount = 0;
@@ -262,22 +258,18 @@
 
                 fetch(apiUrl)
                 .then(response => {
-                    if (!response.ok) throw new Error('Błąd głównego serwera proxy');
+                    if (!response.ok) throw new Error('Błąd głównego serwera proxy lub serwer docelowy odrzuca zapytanie');
                     return response.json();
                 })
-                .then(proxyData => {
-                    if (!proxyData.contents) throw new Error('Proxy nie zwróciło zawartości');
-                    
-                    // Rozkodowanie właściwej odpowiedzi od Riot API zawartej wewnątrz JSON-a z proxy
-                    const data = JSON.parse(proxyData.contents);
-
+                .then(data => {
+                    // Walidacja struktury odpowiedzi i wychwytywanie statusów 4xx/5xx przekazywanych przez API Riotu
                     if (data.status && data.status.status_code) {
                         throw new Error(`Błąd Riot API ${data.status.status_code}: ${data.status.message}`);
                     }
 
-                    if (!data.entries) throw new Error('Brak danych graczy w odpowiedzi');
+                    if (!data.entries) throw new Error('Otrzymany plik JSON nie zawiera tablicy graczy (entries)');
                     
-                    // Sortowanie wyników malejąco według posiadanych punktów League Points (LP)
+                    // Sortowanie wyników malejąco (po League Points) algorytmem sort() i utrwalanie ich w cache
                     cache[region] = data.entries.sort((a, b) => b.leaguePoints - a.leaguePoints);
                     allPlayers = cache[region];
 
@@ -289,31 +281,28 @@
                 .catch(error => {
                     loadingText.innerText = error.message;
                     loadingText.style.color = '#e74c3c';
-                    console.error("Szczegóły błędu:", error);
+                    console.error("Szczegóły błędu asynchronicznego:", error);
                 });
             }
 
-            // Funkcja realizująca dynamiczne renderowanie węzłów DOM. 
-            // Chroni przed "zamrożeniem" przeglądarki poprzez renderowanie fragmentów (chunk) listy zamiast całej zawartości naraz.
+            // Metoda do sukcesywnego zapełniania kontenera DOM. Minimalizuje zjawisko "zamrożenia" wątku 
+            // operacyjnego w przeglądarce podczas parsowania dużych tablic (Lazy Rendering).
             function renderNextChunk() {
                 const endIndex = Math.min(displayedCount + LOAD_CHUNK, allPlayers.length);
                 
                 for (let i = displayedCount; i < endIndex; i++) {
                     const player = allPlayers[i];
                     
-                    // Kaskadowa logika ustalania wyświetlanej nazwy gracza
-                    // 1. Sprawdzanie dostępności nowego standardu Riot ID
+                    // Kaskadowe wyznaczanie tożsamości gracza ze wsparciem wstecznym dla przestarzałych kont Riot
                     let displayName = player.riotIdGameName;
                     if (displayName && player.riotIdTagline) {
                         displayName += " #" + player.riotIdTagline;
                     }
                     
-                    // 2. Obejście wsteczne (fallback) dla kont korzystających ze starych struktur API
                     if (!displayName || displayName === "") {
                         displayName = player.summonerName;
                     }
 
-                    // 3. Fallback dla kont z ukrytymi/usuniętymi danymi
                     if (!displayName || displayName === "") {
                         const fallbackId = player.puuid || player.summonerId;
                         if (fallbackId) {
@@ -323,7 +312,6 @@
                         }
                     }
 
-                    // Dynamiczne generowanie struktury HTML i wstrzykiwanie do istniejącego kontenera
                     const itemHtml = `
                         <div class="challenger-item">
                             <span class="challenger-rank">#${i + 1}</span>
@@ -336,7 +324,7 @@
 
                 displayedCount = endIndex;
 
-                // Sprawdzenie, czy załadowano już całą tablicę graczy w celu ukrycia przycisku
+                // Ukrycie przycisku "Załaduj więcej" w momencie wyczerpania rekordu
                 if (displayedCount >= allPlayers.length) {
                     loadMoreBtn.style.display = 'none';
                 } else {
@@ -344,13 +332,11 @@
                 }
             }
 
-            // Podpięcie zdarzenia ładującego kolejną porcję danych
             loadMoreBtn.addEventListener('click', renderNextChunk);
 
-            // Pobranie wszystkich przycisków klasyfikujących regiony
+            // Mechanika zarządzania zakładkami regionów
             const buttons = document.querySelectorAll('.region-btn');
             
-            // Rejestracja zdarzeń kliknięcia, które inicjują proces wymiany wykresów oraz danych
             buttons.forEach(btn => {
                 btn.addEventListener('click', function() {
                     buttons.forEach(b => b.classList.remove('active'));
@@ -362,7 +348,7 @@
                 });
             });
 
-            // Rozpoczęcie działania skryptu natychmiast po załadowaniu drzewa DOM
+            // Wywołanie początkowego zapytania inicjujące stan wejściowy interfejsu
             fetchChallengers('na1');
         });
     </script>
