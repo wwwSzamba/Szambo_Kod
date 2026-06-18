@@ -1,22 +1,22 @@
 <!DOCTYPE html>
 <html lang="pl">
-<head>
-    <meta charset="UTF-8"> <!-- Ustawienie kodowania znaków na UTF-8, aby poprawnie wyświetlać polskie znaki -->
-    <meta name="viewport" content="width=device-width, initial-scale=1.0"> 
-    <!-- ^ Ustawienie viewportu dla responsywności na urządzeniach mobilnych -->
+<head><!--metadata strony-->
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"><!--ustawia szerokość strony na szerokość urządzenia-->
     <title>iwanan.gg - Statystyki Bohaterów</title>
-    <link rel="stylesheet" href="style.css">
-    <link rel="stylesheet" href="bohaterowie.css">
+
+    <link rel="stylesheet" href="style.css"><!--podpina style.css-->
+    <link rel="stylesheet" href="bohaterowie.css"><!--podpina bohaterowie.css-->
     
-    <script src="champions.js"></script>
+    <script src="champions.js"></script><!--podpina champions.js-->
 </head>
 
 <body>
-    <header class="navbar">
+    <header class="navbar"><!--nagłówek strony-->
         <div class="container">
             <div class="logo">iwanan<span>.GG</span></div>
             <nav>
-                <ul>
+                <ul><!--menu nawigacji-->
                     <li><a href="index.html">Strona Główna</a></li>
                     <li><a href="bohaterowie.html" class="active">Bohaterowie</a></li>
                     <li><a href="rankingi.html">Rankingi</a></li>
@@ -26,7 +26,6 @@
     </header>
 
     <div class="container">
-        <!--  FORMULARZ WYSZUKIWANIA  -->
         <div class="search-section" style="margin-top: 40px; margin-bottom: 30px;">
             <h2 class="section-title" style="margin-bottom: 20px;">Sprawdź Statystyki Bohaterów</h2>
 
@@ -37,12 +36,12 @@
                     <option value="na">NA</option>
                 </select>
 
-                <input type="text" class="search-input" id="riotId" placeholder="Nazwa gracza #TAG">
-                <button class="search-button" onclick="searchPlayer()">Szukaj</button>
+                <input type="text" class="search-input" id="riotId" placeholder="Nazwa gracza #TAG"><!--pole wyszukania-->
+                <button class="search-button" onclick="searchPlayer()">Szukaj</button><!--przycisk szukaj-->
             </div>
         </div>
 
-        <div id="results" style="display: none;">
+        <div id="results" style="display: none;"><!--siatka do wyników-->
             <div class="champion-grid-container">
                 <div class="champion-grid" id="championGrid"></div>
             </div>
@@ -53,24 +52,20 @@
 // Klucz API 
 const API_KEY = "RGAPI-ddf66fc1-27d1-48e3-ba9c-0d37ca9f595b";
 
-/*
-  FUNKCJA fetchProxy:
-  przepuszcza wszystkie adresy URL przez serwer proxy (corsproxy.io). Dzięki temu
-  unikamy błędów CORS (Cross-Origin Resource Sharing), które blokowałyby zapytania 
-  bezpośrednio z poziomu przeglądarki ze względów bezpieczeństwa."
-*/
+
+//funkcja przesyłająca url zapytania do proxy
 async function fetchProxy(url) {
     const proxyUrl = `https://corsproxy.io/?${encodeURIComponent(url)}`;
-    const response = await fetch(proxyUrl);
+    const response = await fetch(proxyUrl);//czeka na odpowiedź od api
     
-    // Sprawdzamy status HTTP połączenia z proxy
+    //sprawdza status HTTP połączenia z proxy
     if (!response.ok) {
         throw new Error(`Błąd połączenia: ${response.status}`);
     }
     
-    const data = await response.json();
+    const data = await response.json();//zamienia json na obiekt
     
-    // Obsługa błędów, jeśli proxy działa, ale samo API Riotu zwróciło błąd (np. zły klucz lub zły gracz)
+    //obsługa błędów, jeśli proxy działa, ale samo api riot zwróciło błąd
     if (data.status && data.status.status_code) {
         throw new Error(`Błąd Riot API (${data.status.status_code}): ${data.status.message}`);
     }
@@ -78,150 +73,132 @@ async function fetchProxy(url) {
     return data;
 }
 
-/*
-  FUNKCJA searchPlayer:
-  Używamy async/await, ponieważ pobieranie danych to operacja I/O (sieciowa), 
-  która nie powinna blokować głównego wątku przeglądarki."
-*/
+
+//funkcja wyszukująca gracza
 async function searchPlayer() {
+    //pobieramy i formatujemy input użytkowinka
     const riotIdInput = document.getElementById('riotId').value.trim();
     const regionVal = document.getElementById('region').value;
 
-    // Riot API w nowym systemie wymaga ogólnych regionów (europe/americas/asia) do szukania kont
+    //wybór regionu
     let accountRouting = 'europe';
     if (regionVal === 'na') accountRouting = 'americas';
 
+    //pobranie miejsca na wyniki
     const resultsDiv = document.getElementById('results');
     const grid = document.getElementById('championGrid');
 
-    /* 
-      PODSTAWOWA WALIDACJA FORMULARZA
-    */
+    //sprawdzenie czy nazwa gracza ma poprawny format
     if (!riotIdInput.includes('#')) {
         alert('Wpisz Riot ID w formacie: Nazwa#TAG');
         return;
     }
 
-    // Dekonstrukcja tablicy: rozbijamy wpisany string "Nazwa#TAG" na dwie zmienne
+    //rozdzielenia nazwy gracza
     const [gameName, tagLine] = riotIdInput.split('#');
 
-    resultsDiv.style.display = 'block';
-    grid.innerHTML = 'Ładowanie... (łączenie przez proxy)';
+    resultsDiv.style.display = 'block';//wyświetla miejsce na wyniki
+    grid.innerHTML = 'Ładowanie... (łączenie przez proxy)';//wyświetla wiadomość o ładowaniu
 
-    /*
-      BLOK TRY...CATCH (Obsługa błędów)
-      Jeśli cokolwiek pójdzie nie tak (np. API nie odpowie, gracz nie istnieje), 
-      wyłapuję ten błąd i renderuję przyjazny komunikat dla użytkownika."
-    */
     try {
-        // ZAPYTANIE 1: Pobieramy PUUID (unikalny identyfikator konta) za pomocą nazwy gracza
+        //pobieramy PUUID
         const accountUrl = `https://${accountRouting}.api.riotgames.com/riot/account/v1/accounts/by-riot-id/${encodeURIComponent(gameName)}/${encodeURIComponent(tagLine)}?api_key=${API_KEY}`;
         const accountData = await fetchProxy(accountUrl);
         
         if (!accountData.puuid) throw new Error('Nie znaleziono gracza o podanym Riot ID.');
-        const puuid = accountData.puuid;
+        const puuid = accountData.puuid;//przydielamy puuid z accountData do odzielnego obiektu
 
-        // ZAPYTANIE 2: Pobieramy listę identyfikatorów 10 ostatnich meczów tego gracza
+        //pobieramy 10 id ostatnich meczów gracza
         const matchIdsUrl = `https://${accountRouting}.api.riotgames.com/lol/match/v5/matches/by-puuid/${puuid}/ids?start=0&count=10&api_key=${API_KEY}`;
         const matchIds = await fetchProxy(matchIdsUrl);
 
-        if (!Array.isArray(matchIds)) throw new Error('Błąd podczas pobierania historii meczów.');
-        if (matchIds.length === 0) throw new Error('Ten gracz nie zagrał żadnych meczów w wybranym trybie.');
+        if (!Array.isArray(matchIds)) throw new Error('Błąd podczas pobierania historii meczów.');//sprawdza czy matchIds jest tablicą
+        if (matchIds.length === 0) throw new Error('Ten gracz nie zagrał żadnych meczów w wybranym trybie.');//sprawdza czy był chociarz jeden rozegrany mecz
 
-        grid.innerHTML = 'Analizowanie ostatnich 10 meczów...';
+        grid.innerHTML = 'Analizowanie ostatnich 10 meczów...';//wyświetla wiadomość o analizie
 
-        /* 
-          ZAPYTANIE 3: ZRÓWNOLEGLANIE (PROMISE.ALL) 
-         Drastycznie optymalizuje czas pobierania szczegółów wielu meczów naraz."
-        */
+        //jednocześnie wysyłamy zapytanie o dane o każdy meczu
         const matchPromises = matchIds.map(id => {
             const matchUrl = `https://${accountRouting}.api.riotgames.com/lol/match/v5/matches/${id}?api_key=${API_KEY}`;
             return fetchProxy(matchUrl);
         });
 
-        // Czekamy, aż WSZYSTKIE 10 zapytań o mecze się zakończy
+        //czekamy aż wszystkie zapytania dostaną odpowiedź
         const matchesData = await Promise.all(matchPromises);
 
-        // Agregacja danych do statystyk (funkcja niżej)
+        //obliczany statystyki bohaterów
         const championStats = calculateChampionStats(matchesData, puuid);
 
-        // Wyrenderowanie gotowych danych w DOM (HTML)
+        //wyświetlamy statystyki bohaterów
         renderChampions(championStats, matchIds.length);
 
     } catch (err) {
-        // Wyłapanie i bezpieczne wyświetlenie błędu w interfejsie
+        //wyłapujemy i bezpieczne wyświetlenmy błąd w interfejsie
         grid.innerHTML = `<p style="color:#e74c3c;">Wystąpił błąd: ${err.message}</p>`;
         console.error("Szczegóły błędu:", err);
     }
 }
 
-/*
-  FUNKCJA calculateChampionStats:
-  Szukamy tylko tego uczestnika, którego PUUID zgadza się z wyszukiwanym graczem, 
-  a następnie zliczamy jego gry i wygrane w obiekcie, który na końcu sortuję."
-*/
+//funkcja obliczająca statystyki bohaterów
 function calculateChampionStats(matches, puuid) {
-    const stats = {};
+    const stats = {};//inicjalizacja statystyk
 
     matches.forEach(match => {
-        // Zabezpieczenie przed uszkodzonymi danymi meczu
+        //zabezpieczenie przed uszkodzonymi danymi meczu
         if(!match || !match.info || !match.info.participants) return;
 
-        // Metoda .find() szuka w tablicy uczestników tego konkretnego gracza
+        //metoda .find() szuka w tablicy uczestników naszego gracza
         const p = match.info.participants.find(x => x.puuid === puuid);
         if (!p) return;
 
-        // Jeśli bohatera nie ma jeszcze w obiekcie stats, tworzymy jego wpis
+        //jeśli bohatera nie ma jeszcze w obiekcie stats, tworzymy jego wpis
         if (!stats[p.championName]) {
             stats[p.championName] = { name: p.championName, played: 0, wins: 0 };
         }
 
-        // Aktualizacja statystyk dla danej gry
+        //aktualizacja statystyk dla danej gry
         stats[p.championName].played++;
         if (p.win) stats[p.championName].wins++;
     });
 
-    // Zmiana słownika (obiektu) w tablicę i sortowanie malejąco od najczęściej wybieranych bohaterów
+    //zmiana słownika na tablicę i sortowanie malejąco od najczęściej wybieranych bohaterów
     return Object.values(stats).sort((a, b) => b.played - a.played);
 }
 
-/*
-  FUNKCJA renderChampions:
-  Zamiast trzymać z góry zdefiniowany HTML, skrypt tworzy nowe elementy (div) w locie,
-  uzupełnia je obliczonymi danymi z API (Win Rate, Pick Rate) i dołącza do kontenera na stronie."
-*/
+//funkcja wyświetlająca bohaterów
 function renderChampions(championsData, totalMatchesAnalyzed) {
-    const grid = document.getElementById('championGrid');
-    grid.innerHTML = ''; // Wyczyszczenie gridu przed renderowaniem nowych wyników
+    const grid = document.getElementById('championGrid');//pobieramy miejsce na wyniki
+    grid.innerHTML = ''; //czyszczenie gridu przed renderowaniem nowych wyników
 
+    //sprawdzenie czy mamy statystyki boheterów dla gracza
     if (championsData.length === 0) {
         grid.innerHTML = 'Brak statystyk bohaterów dla tego gracza w ostatnich meczach.';
         return;
     }
 
     championsData.forEach(champ => {
-        // Obliczenia matematyczne
-        const winRate = ((champ.wins / champ.played) * 100).toFixed(1);
-        const pickRate = ((champ.played / totalMatchesAnalyzed) * 100).toFixed(1);
+        const winRate = ((champ.wins / champ.played) * 100).toFixed(1);//obliczenie winrate dla bohatera
+        const pickRate = ((champ.played / totalMatchesAnalyzed) * 100).toFixed(1);//obliczenie pickrate dla bohatera
 
-        // Operator trójargumentowy (Ternary operator) - zielony kolor, jeśli WinRate >= 50%, czerwony jeśli mniej
+        //sprawdza czy winrate jest większy lub równy 50% i wyświetla go na zielono jeśli jest i na czerwono jeśli nie jest
         const winRateColor = winRate >= 50 ? '#2ecc71' : '#e74c3c';
 
-        // Próba pobrania obrazka z lokalnego pliku champions.js, w razie braku (fallback) pobiera z CDN Riotu
-        const imageUrl = typeof championImages !== 'undefined' && championImages[champ.name] 
-            ? championImages[champ.name] 
-            : `https://ddragon.leagueoflegends.com/cdn/14.8.1/img/champion/${champ.name}.png`;
+        // próba pobrania obrazka z lokalnego pliku champions.js, w razie braku pobiera z data dragon riot
+        const imageUrl = typeof championImages !== 'undefined' && championImages[champ.name] //sprawdza czy mamy obrazek bohatera
+            ? championImages[champ.name] //daje nasz obrazek
+            : `https://ddragon.leagueoflegends.com/cdn/14.8.1/img/champion/${champ.name}.png`;//ściąga obrazek z data dragon riotu
 
-        // Tworzenie węzła DOM i wstrzykiwanie bezpiecznego HTML-a
+        //stworzenie karty bohatera i dodanie klasy
         const card = document.createElement('div');
         card.className = 'champion-image-container';
-        
-        card.innerHTML = ` 
-            <div class="image-wrapper">  
+
+        //dodanie html do karty
+        card.innerHTML = `
+            <div class="image-wrapper">
                 <img src="${imageUrl}" 
-                     alt="${champ.name}" 
+                     alt="${champ.name}"
                      onerror="this.src='https://ddragon.leagueoflegends.com/cdn/14.8.1/img/profileicon/29.png'">
-                
+
                 <div class="overlay">
                     <div><strong style="color:${winRateColor}">${winRate}%</strong> WR</div>
                     <div>Pick Rate: ${pickRate}%</div>
@@ -232,7 +209,7 @@ function renderChampions(championsData, totalMatchesAnalyzed) {
             <div class="champion-name">${champ.name}</div>
         `;
 
-        // Dodanie karty bohatera do widocznej siatki na stronie
+        //dołączanie stworzonego elementu do siatki wyników
         grid.appendChild(card);
     });
 }
