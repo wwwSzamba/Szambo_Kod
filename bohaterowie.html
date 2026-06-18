@@ -1,10 +1,10 @@
 <!DOCTYPE html>
 <html lang="pl">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta charset="UTF-8"> <!-- Ustawienie kodowania znaków na UTF-8, aby poprawnie wyświetlać polskie znaki -->
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"> 
+    <!-- ^ Ustawienie viewportu dla responsywności na urządzeniach mobilnych -->
     <title>iwanan.gg - Statystyki Bohaterów</title>
-
     <link rel="stylesheet" href="style.css">
     <link rel="stylesheet" href="bohaterowie.css">
     
@@ -26,9 +26,7 @@
     </header>
 
     <div class="container">
-        <!-- 
-             FORMULARZ WYSZUKIWANIA 
-        -->
+        <!--  FORMULARZ WYSZUKIWANIA  -->
         <div class="search-section" style="margin-top: 40px; margin-bottom: 30px;">
             <h2 class="section-title" style="margin-bottom: 20px;">Sprawdź Statystyki Bohaterów</h2>
 
@@ -217,13 +215,13 @@ function renderChampions(championsData, totalMatchesAnalyzed) {
         // Tworzenie węzła DOM i wstrzykiwanie bezpiecznego HTML-a
         const card = document.createElement('div');
         card.className = 'champion-image-container';
-
-        card.innerHTML = `
-            <div class="image-wrapper">
+        
+        card.innerHTML = ` 
+            <div class="image-wrapper">  
                 <img src="${imageUrl}" 
-                     alt="${champ.name}"
+                     alt="${champ.name}" 
                      onerror="this.src='https://ddragon.leagueoflegends.com/cdn/14.8.1/img/profileicon/29.png'">
-
+                
                 <div class="overlay">
                     <div><strong style="color:${winRateColor}">${winRate}%</strong> WR</div>
                     <div>Pick Rate: ${pickRate}%</div>
