@@ -1,24 +1,24 @@
 <!DOCTYPE html>
 <html lang="pl">
-<head>
+<head><!--metadata strony-->
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0"><!--ustawia szerokość strony na szerokość urządzenia-->
     <title>iwanan.gg - Porównaj się z Greatest Player of Today</title>
-    <link rel="stylesheet" href="style.css">
+    <link rel="stylesheet" href="style.css"><!--podpina style.css-->
 </head>
 <body>
-    <header class="navbar">
+    <header class="navbar"><!--nagłówek strony-->
         <div class="container">
             <div class="logo">iwanan<span>.GG</span></div>
             <nav>
-                <ul>
+                <ul><!--menu nawigacji-->
                     <li><a href="index.html">Strona Główna</a></li>
                     <li><a href="bohaterowie.html">Bohaterowie</a></li>
                     <li><a href="rankingi.html">Rankingi</a></li>
                 </ul>
             </nav>                
             
-            <label class="switch">
+            <label class="switch"><!--spoiler toggle-->
                 <input type="checkbox" id="spoilerToggle" onclick="toggleSpoiler()">
                 <span class="slider round"></span>
             </label>
@@ -27,20 +27,21 @@
         </div>
     </header>
 
-    <main class="container">
-        <section class="search-section">
+    <main class="container"><!--główna część strony-->
+        <section class="search-section"><!--wyszukiwanie-->
+            <!--ładowanie zdjęć i pokazywanie tylko zwycięskiego jjk-->
             <img src="https://preview.redd.it/nah-id-win-v0-epcjymbbd3hc1.jpg?width=640&crop=smart&auto=webp&s=7e3054428206f862ddd30d6df0e28752295da965" id="Nah" class="hero-image">
             <img src="https://icon2.cleanpng.com/20240323/euu/transparent-smiley-face-happy-face-with-sunglasses-giving-thumbs-up65ff01f051ca37.60074786.webp" id="sunglassesThumbsUp" class="hero-image-off">
             <img src="https://i.redd.it/jw82rvev3i7e1.png" id="gojoLost" class="hero-image-off">
             <img src="https://pbs.twimg.com/media/F3v2hoUbgAAHnzu.jpg" id="sadGuy" class="hero-image-off">
             <div class="search-bar">
-                <select class="region-select">
+                <select class="region-select"><!--dropdown menu z regionami-->
                     <option value="eune">EUNE</option>
                     <option value="euw">EUW</option>
                     <option value="na">NA</option>
                 </select>
-                <input type="text" placeholder="Nazwa gracza #TAG" class="search-input">
-                <button class="search-button" onclick="fetchPlayerData()">Szukaj</button>
+                <input type="text" placeholder="Nazwa gracza #TAG" class="search-input"><!--pole wyszukiwania-->
+                <button class="search-button" onclick="fetchPlayerData()">Szukaj</button><!--przycisk szukaj-->
             </div>
         </section>
 
@@ -48,15 +49,14 @@
             <h2 class="section-title">Porównanie Statystyk</h2>
             
             <div class="cards-container">
-                <div class="player-card user-card">
+                <div class="player-card user-card"><!--informacje użytkownika-->
                     <div class="card-header">
-                        <div class="avatar placeholder"></div>
-                        <div class="info">
+                        <div class="info"><!--nick i ranga użytwkownika-->
                             <h3 id="user-name">Twój Nick</h3>
                             <span class="rank" id="user-rank">Unranked</span>
                         </div>
                     </div>
-                    <div class="stats">
+                    <div class="stats"><!--staty użytkownika-->
                         <div class="stat-row"><span>Winrate:</span> <strong id="user-winrate">?</strong></div>
                         <div class="stat-row"><span>KDA:</span> <strong id="user-kda">?</strong></div>
                         <div class="stat-row"><span>CS/min:</span> <strong id="user-cspm">?</strong></div>
@@ -65,15 +65,14 @@
 
                 <div class="vs-badge">VS</div>
 
-                <div class="player-card pro-card">
+                <div class="player-card pro-card"><!--informacje iwanana-->
                     <div class="card-header">
-                        <div class="avatar iwanan-avatar"></div>
                         <div class="info">
                             <h3 class="pro-name">Tomasz "iwanan" Gaś</h3>
-                            <span class="rank challenger" id="iwanan-rank">Ładowanie...</span>
+                            <span class="rank challenger" id="iwanan-rank">Ładowanie...</span><!--ranga iwanana z placeholderem dopuki nie pobierze się jego ranga-->
                         </div>
                     </div>
-                    <div class="stats">
+                    <div class="stats"><!--staty iwanana-->
                         <div class="stat-row"><span>Winrate:</span> <strong id="iwananWinRate">...</strong></div>
                         <div class="stat-row"><span>KDA:</span> <strong id="iwananKDA">...</strong></div>
                         <div class="stat-row"><span>CS/min:</span> <strong id="iwananCSPM">...</strong></div>
@@ -88,53 +87,43 @@
         //--------------
         const API_KEY = "RGAPI-16807741-f004-418b-b547-f9f038ac97bf";
 
-        /*
-          STAŁE DO ALGORYTMU PORÓWNAWCZEGO
-          Dzięki metodzie .indexOf() można później łatwo przekształcić tekstową 
-          rangę (np. 'GOLD') na wartość liczbową, co pozwala algorytmowi ocenić, 
-          która ranga jest wyższa."
-        */
-        const TIER_ORDER = ["IRON", "BRONZE", "SILVER", "GOLD", "PLATINUM", "EMERALD", "DIAMOND", "MASTER", "GRANDMASTER", "CHALLENGER"];
-        const DIVISION_ORDER = ["IV", "III", "II", "I"];
+        const TIER_ORDER = ["IRON", "BRONZE", "SILVER", "GOLD", "PLATINUM", "EMERALD", "DIAMOND", "MASTER", "GRANDMASTER", "CHALLENGER"];//lista rang w kolejności od najniższej do najwyższej
+        const DIVISION_ORDER = ["IV", "III", "II", "I"];//lista dywizji od najniższej do najwyższej
 
+        //inicjalizacja statystyk
         let userStats = null;
         let iwananStats = null;
 
-        /*
-          FUNKCJA getRankScore (ALGORYTM OCENIAJĄCY)
-          na jeden skompresowany wynik liczbowy (score). Najwyższa waga to ranga (* 10000), 
-          potem dywizja (* 1000), a na końcu LP. Dzięki temu matematyczne porównanie graczy jest trywialne."
-        */
+       //zamienia rangę na liczbę (index rangi*10000+index dywizji*1000)
         function getRankScore(tier, division, lp) {
             const tierIdx = TIER_ORDER.indexOf(tier?.toUpperCase());
-            if (tierIdx === -1) return -1; // Unranked = najgorszy wynik
+            if (tierIdx === -1) return -1; // unranked = najgorszy wynik
             const divIdx = DIVISION_ORDER.indexOf(division?.toUpperCase());
-            // MASTER+ nie ma dywizji, traktujemy jako dywizję 0
+            // master+ nie ma dywizji traktujemy jako dywizję 0
             const divScore = divIdx === -1 ? 0 : divIdx;
             return tierIdx * 10000 + divScore * 1000 + (lp || 0);
         }
 
-        /*
-          MANIPULACJA DOM (Interfejs Użytkownika)
-          Reagują na zdarzenia kliknięcia (eventy) użytkownika, tworząc interaktywne elementy 
-        */
+       //funkcja zamieniająca zdjęcia
         function swapImages(newImage, oldImage) {
-            if (!oldImage || !newImage) return;
+            if (!oldImage || !newImage) return;//sprawdza oba obrazki
             oldImage.classList.remove("hero-image");
             oldImage.classList.add("hero-image-off");
             newImage.classList.remove("hero-image-off");
             newImage.classList.add("hero-image");   
         }
 
+        //funkcja obsługująca spoiler toggle aktywowana onclick
         function toggleSpoiler() {
+            //pobiera obrazki i toggle
             var checkBox = document.getElementById("spoilerToggle");
             var jjkWin = document.getElementById("Nah");
             var emojiWin = document.getElementById("sunglassesThumbsUp");
             var jjkLoss = document.getElementById("gojoLost");
             var emojiLoss = document.getElementById("sadGuy");
 
-            if (checkBox.checked) {
-                if (jjkWin.classList.contains("hero-image")) swapImages(emojiWin, jjkWin);
+            if (checkBox.checked) { //sprawdza czy toggle jest włączony czy wyłączony
+                if (jjkWin.classList.contains("hero-image")) swapImages(emojiWin, jjkWin);//sprawdza obecny obrazek i zamenia go inną wersją tego samego stanu
                 if (jjkLoss.classList.contains("hero-image")) swapImages(emojiLoss, jjkLoss);
             } else {
                 if (emojiWin.classList.contains("hero-image")) swapImages(jjkWin, emojiWin);
@@ -142,34 +131,31 @@
             }
         }
 
-        /*
-          LOGIKA BIZNESOWA: Porównanie graczy kaskadowo
-          Najpierw sprawdza rangę. Jeśli jest remis, schodzi niżej do winrate,
-          potem do KDA i tak dalej. To gwarantuje sprawiedliwy i logiczny werdykt."
-        */
+        //funkcja sprawdzająca czy użytkownik jest lepszy od iwanana
         function isUserBetter(user, pro) {
-            // 1. Ranga
+            //pobiera rangi
             const userRankScore = getRankScore(user.tier, user.division, user.lp);
             const proRankScore  = getRankScore(pro.tier,  pro.division,  pro.lp);
-            if (userRankScore !== proRankScore) return userRankScore > proRankScore;
+            if (userRankScore !== proRankScore) return userRankScore > proRankScore;//sprawdza czy jest remis, jeśli nie ma zwraca 1 gdy użytkownik jest lepszy i 0 jeśli iwanan jest lepszy
 
-            // 2. Winrate
+            //sprawdza winrate
             if (user.winrate !== pro.winrate) return user.winrate > pro.winrate;
 
-            // 3. KDA
+            //sprawdza kda
             if (user.kda !== pro.kda) return user.kda > pro.kda;
 
-            // 4. CS/min
+            //sprawdza cs/min
             if (user.cspm !== pro.cspm) return user.cspm > pro.cspm;
 
-            // Remis całkowity - Iwanan wygrywa jako 'boss'
+            //jeśli wszystko remisuje zwraca 0 i iwanan wygrywa
             return false;
         }
 
-        // Funkcja wywołująca wizualną zmianę obrazka na podstawie wyniku
+        //funkcja zmieniająca obrazek na podstawie porównania
         function reactToComparison() {
-            if (!userStats || !iwananStats) return;
+            if (!userStats || !iwananStats) return;//sprawdza czy mamy wszystkie staty
 
+            //pobiera obrazki, spoiler toggle i obecny obrazek
             var checkBox = document.getElementById("spoilerToggle");
             var jjkLoss  = document.getElementById("gojoLost");
             var jjkWin   = document.getElementById("Nah");
@@ -177,49 +163,46 @@
             var emojiLoss = document.getElementById("sadGuy");
             var currentActiveImage = document.querySelector(".hero-image");
 
-            const userWins = isUserBetter(userStats, iwananStats);
+            const userWins = isUserBetter(userStats, iwananStats);//sprawdza zwycięsce
 
             if (!userWins) {
-                swapImages(checkBox.checked ? emojiWin : jjkWin, currentActiveImage);
+                swapImages(checkBox.checked ? emojiWin : jjkWin, currentActiveImage);//iwanan wygrał 
             } else {
-                swapImages(checkBox.checked ? emojiLoss : jjkLoss, currentActiveImage);
+                swapImages(checkBox.checked ? emojiLoss : jjkLoss, currentActiveImage);//iwanan przegrał
             }
         }
 
-        /*
-          ZAAWANSOWANA ASYNCHRONICZNOŚĆ I AGREGACJA
-          20 ostatnich gier z API (fetch). Jeśli gracz grał, wykorzystuję Promise.all() do 
-          równoległego pobrania szczegółów tych 20 meczów naraz.
-          Następnie pętlą 'for...of' wyciągamy statystyki (kille, zgony, miniony, czas), 
-          odrzucamy gry typu 'remake' (poniżej 5 minut) i agreguję wynik do postaci ułamkowej (KDA, CSPM)."
-        */
+        //funkcja pobierająca ostatnie 20 meczów gracza i obliczające na jej podstawie kda i cs/min
         async function fetchMatchStats(puuid, accountRouting) {
-            // Pobierz ostatnie 20 gier rankingowych Solo/Duo (queue=420)
-            const matchListUrl = `https://${accountRouting}.api.riotgames.com/lol/match/v5/matches/by-puuid/${puuid}/ids?queue=420&count=20&api_key=${API_KEY}`;
-            const matchListRes = await fetch(matchListUrl);
-            if (!matchListRes.ok) throw new Error("Błąd pobierania listy meczy.");
-            const matchIds = await matchListRes.json();
+            //pobiera ostatnie 20 gier rankingowych solo (queue=420)
+            const matchListUrl = `https://${accountRouting}.api.riotgames.com/lol/match/v5/matches/by-puuid/${puuid}/ids?queue=420&count=20&api_key=${API_KEY}`;//adres zapytania
+            const matchListRes = await fetch(matchListUrl);//fetchowanie listy meczów
+            if (!matchListRes.ok) throw new Error("Błąd pobierania listy meczy.");//obsługa błędów
+            const matchIds = await matchListRes.json();//zamienia z json na obiekt
 
-            if (matchIds.length === 0) return null;
+            if (matchIds.length === 0) return null;//sprawdza czy były rozegrane jakie kolwiek mecze
 
-            // Pobieramy dane każdego meczu równolegle
-            const matchPromises = matchIds.map(id =>
-                fetch(`https://${accountRouting}.api.riotgames.com/lol/match/v5/matches/${id}?api_key=${API_KEY}`)
-                    .then(r => r.ok ? r.json() : null)
+            //pobiera dane każdego meczu
+            const matchPromises = matchIds.map(id =>//zbiera obietnica dla każdego meczu
+                fetch(`https://${accountRouting}.api.riotgames.com/lol/match/v5/matches/${id}?api_key=${API_KEY}`)//fetchowanie meczów
+                    .then(r => r.ok ? r.json() : null)//sprawdzanie czy fetch się udał i zamienieie na obiekt
             );
-            const matches = await Promise.all(matchPromises);
+            const matches = await Promise.all(matchPromises);//czeka na wszystkie obietnice i zwraca tablice meczów
 
+            //inicjalizacja liczników
             let totalKills = 0, totalDeaths = 0, totalAssists = 0, totalCS = 0, totalMinutes = 0;
             let validGames = 0;
 
+            //przechodzi przez wszystkie mecze
             for (const match of matches) {
-                if (!match) continue;
-                const participant = match.info.participants.find(p => p.puuid === puuid);
-                if (!participant) continue;
+                if (!match) continue;//sprawdza czy mecz jest pusty
+                const participant = match.info.participants.find(p => p.puuid === puuid);//szuka użytkownika
+                if (!participant) continue;//sprawdza czy jest gracz
 
-                const durationMinutes = match.info.gameDuration / 60;
-                if (durationMinutes < 5) continue; // Pomiń remake'i
+                const durationMinutes = match.info.gameDuration / 60;//zamienia czas w sekundach na minuty
+                if (durationMinutes < 5) continue; //pomija remake
 
+                //dodaje do liczników
                 totalKills   += participant.kills;
                 totalDeaths  += participant.deaths;
                 totalAssists += participant.assists;
@@ -228,66 +211,62 @@
                 validGames++;
             }
 
-            if (validGames === 0) return null;
+            if (validGames === 0) return null;//sprawdza czy mamy jakieś liczone gry
 
-            const avgDeaths = totalDeaths / validGames;
-            const kda  = avgDeaths === 0
-                ? parseFloat((totalKills + totalAssists).toFixed(2))
+            const avgDeaths = totalDeaths / validGames;//średnia śmierci
+            const kda  = avgDeaths === 0//kda
+                ? parseFloat((totalKills + totalAssists).toFixed(2))//jeśli gracz miał zero śmierci unikamy dzielenia przez 0
                 : parseFloat(((totalKills + totalAssists) / totalDeaths).toFixed(2));
-            const cspm = parseFloat((totalCS / totalMinutes).toFixed(1));
+            const cspm = parseFloat((totalCS / totalMinutes).toFixed(1));//cs/min
 
-            return { kda, cspm };
+            return { kda, cspm };//zwraca kda i cs/min
         }
 
-        /*
-          DOMYŚLNE DANE SYSTEMOWE (BOSS)
-          zapytania o rangę z Riot API i historię meczów. 
-          Jeśli serwer odrzuci zapytanie (np. limit zapytań API), w bloku 'catch' jest tzw. 
-          Fallback (dane domyślne na twardo wpisane w kod), aby aplikacja się nie zawiesiła."
-        */
+        //funkcja pobierająca statystyki iwanana
         async function fetchIwananData() {
+            //info iwanana
             const gameName = "iwanan";
             const tagLine  = "7596";
             const accountRouting  = "europe";
             const platformRouting = "euw1";
 
             try {
-                // PUUID
+                //pobiera puuid
                 const accountUrl = `https://${accountRouting}.api.riotgames.com/riot/account/v1/accounts/by-riot-id/${encodeURIComponent(gameName)}/${encodeURIComponent(tagLine)}?api_key=${API_KEY}`;
                 const accountRes  = await fetch(accountUrl);
                 if (!accountRes.ok) throw new Error("Nie znaleziono konta Iwanana.");
                 const accountData = await accountRes.json();
                 const puuid = accountData.puuid;
 
-                // Ranga + Match stats równolegle
+                //pobieranie danych
                 const leagueUrl = `https://${platformRouting}.api.riotgames.com/lol/league/v4/entries/by-puuid/${puuid}?api_key=${API_KEY}`;
                 const [leagueRes, matchStats] = await Promise.all([
-                    fetch(leagueUrl),
-                    fetchMatchStats(puuid, accountRouting)
+                    fetch(leagueUrl),//fetch rangi, zwycięstw i przegranych
+                    fetchMatchStats(puuid, accountRouting)//wywołanie funkcji fetchującej kda i cs/min
                 ]);
 
                 if (!leagueRes.ok) throw new Error("Błąd pobierania rankingu Iwanana.");
-                const leagueData = await leagueRes.json();
-                const soloQ = leagueData.find(q => q.queueType === "RANKED_SOLO_5x5");
+                const leagueData = await leagueRes.json();//zamiana json na obiekt
+                const soloQ = leagueData.find(q => q.queueType === "RANKED_SOLO_5x5");//patrzy tylko na ranked solo 5v5
 
-                let winrate = 0, tier = null, division = null, lp = 0;
+                let winrate = 0, tier = null, division = null, lp = 0;//inicjalizacja
 
-                if (soloQ) {
+                if (soloQ) {//sprawdza czy gracz grał soloQ
                     const wins   = soloQ.wins;
                     const losses = soloQ.losses;
-                    winrate  = Math.round((wins / (wins + losses)) * 100);
+                    winrate  = Math.round((wins / (wins + losses)) * 100);//liczenie winrateu
                     tier     = soloQ.tier;
                     division = soloQ.rank;
                     lp       = soloQ.leaguePoints;
-                    const rankText = `${tier} ${division} (${lp} LP)`;
-                    document.getElementById("iwanan-rank").textContent = rankText;
-                    document.getElementById("iwananWinRate").textContent = `${winrate}%`;
+                    const rankText = `${tier} ${division} (${lp} LP)`;//kompiluje range do wyświetlenia
+                    document.getElementById("iwanan-rank").textContent = rankText;//wyświetla range
+                    document.getElementById("iwananWinRate").textContent = `${winrate}%`;//wyświetla winrate
                 } else {
-                    document.getElementById("iwanan-rank").textContent = "Unranked";
+                    document.getElementById("iwanan-rank").textContent = "Unranked";//w przypadku braku gier soloQ
                     document.getElementById("iwananWinRate").textContent = "0%";
                 }
 
-                let kda = 0, cspm = 0;
+                let kda = 0, cspm = 0;//inicjalizacja
                 if (matchStats) {
                     kda  = matchStats.kda;
                     cspm = matchStats.cspm;
@@ -298,8 +277,8 @@
                     document.getElementById("iwananCSPM").textContent = "Brak danych";
                 }
 
-                iwananStats = { tier, division, lp, winrate, kda, cspm };
-                reactToComparison();
+                iwananStats = { tier, division, lp, winrate, kda, cspm };//aktualizacja iwananStats
+                reactToComparison();//porównuje z iwanan
 
             } catch (err) {
                 console.error("Błąd ładowania Bossa:", err);
@@ -307,28 +286,28 @@
                 document.getElementById("iwananWinRate").textContent  = "68%";
                 document.getElementById("iwananKDA").textContent      = "4.95:1";
                 document.getElementById("iwananCSPM").textContent     = "9.8";
-                // Fallback stats for comparison (W razie błędu sieci, kod zaciągnie sztywne statystyki)
+                //staty w razie błędu
                 iwananStats = { tier: "CHALLENGER", division: "I", lp: 999, winrate: 68, kda: 4.95, cspm: 9.8 };
-                reactToComparison();
+                reactToComparison();//porównuje z iwanan
             }
         }
 
-        /*
-          FUNKCJA GŁÓWNA UŻYTKOWNIKA
-          Jeśli wszystko zakończy się sukcesem (try), podmienia wartości w DOM i odpala algorytm porównawczy."
-        */
+        //funkcja pobierające dane gracza
         async function fetchPlayerData() {
+            //odczyt danych wprowadzonych przez użytkownika
             const rawInput  = document.querySelector(".search-input").value.trim();
             const regionVal = document.querySelector(".region-select").value;
 
-            // Walidacja formularza
+            //sprawdza czy nazwa ma #
             if (!rawInput.includes("#")) {
                 alert("Wpisz Riot ID w poprawnym formacie: Nazwa#TAG (np. Hide on bush#KR1)");
                 return;
             }
-
+            
+            //dzieli wprowadzoną nazwę
             const [gameName, tagLine] = rawInput.split("#");
 
+            //wybór regionu
             let accountRouting  = "europe";
             let platformRouting = "eun1";
 
@@ -340,62 +319,61 @@
                 accountRouting  = "americas";
             }
 
-            // Reset UI przed pobraniem nowych danych
+            //reset ui przed pobraniem nowych danych
             document.getElementById("user-winrate").textContent = "...";
             document.getElementById("user-kda").textContent     = "...";
             document.getElementById("user-cspm").textContent    = "...";
             userStats = null;
 
             try {
-                // PUUID
+                //pobiera PUUID
                 const accountUrl = `https://${accountRouting}.api.riotgames.com/riot/account/v1/accounts/by-riot-id/${encodeURIComponent(gameName)}/${encodeURIComponent(tagLine)}?api_key=${API_KEY}`;
                 const accountRes  = await fetch(accountUrl);
                 if (!accountRes.ok) throw new Error("Nie znaleziono gracza o podanym Riot ID.");
                 const accountData = await accountRes.json();
                 const puuid = accountData.puuid;
 
-                // Ranga + Match stats równolegle
+                //
                 const leagueUrl = `https://${platformRouting}.api.riotgames.com/lol/league/v4/entries/by-puuid/${puuid}?api_key=${API_KEY}`;
                 const [leagueRes, matchStats] = await Promise.all([
-                    fetch(leagueUrl),
-                    fetchMatchStats(puuid, accountRouting)
+                    fetch(leagueUrl),//fetch rangi, zwycięstw i przegranych
+                    fetchMatchStats(puuid, accountRouting)//wywołanie funkcji fetchującej kda i cs/min
                 ]);
 
                 if (!leagueRes.ok) throw new Error("Błąd pobierania rankingu gracza.");
-                const leagueData = await leagueRes.json();
-                const soloQ = leagueData.find(q => q.queueType === "RANKED_SOLO_5x5");
+                const leagueData = await leagueRes.json();//zamiana json na obiekt
+                const soloQ = leagueData.find(q => q.queueType === "RANKED_SOLO_5x5");//patrzy tylko na ranked solo 5v5
 
                 if (!soloQ) {
-                    alert("Ten gracz nie rozegrał jeszcze żadnych gier rankingowych w Solo/Duo.");
+                    alert("Ten gracz nie rozegrał jeszcze żadnych gier rankingowych w SoloQ.");//powiadomienie o braku gier soloq
                     return;
                 }
 
                 const wins     = soloQ.wins;
                 const losses   = soloQ.losses;
-                const winrate  = Math.round((wins / (wins + losses)) * 100);
+                const winrate  = Math.round((wins / (wins + losses)) * 100);//liczenie winrateu
                 const tier     = soloQ.tier;
                 const division = soloQ.rank;
                 const lp       = soloQ.leaguePoints;
-                const rankText = `${tier} ${division} (${lp} LP)`;
+                const rankText = `${tier} ${division} (${lp} LP)`;//kompiluje range do wyświetlenia
 
-                document.getElementById("user-name").textContent    = `${gameName}#${tagLine}`;
-                document.getElementById("user-rank").textContent    = rankText;
-                document.getElementById("user-winrate").textContent = `${winrate}%`;
+                document.getElementById("user-name").textContent    = `${gameName}#${tagLine}`;//wyświetla nazwę gracza
+                document.getElementById("user-rank").textContent    = rankText;//wyświetla range
+                document.getElementById("user-winrate").textContent = `${winrate}%`;//wyświetla winrate
 
-                let kda = 0, cspm = 0;
+                let kda = 0, cspm = 0;//inicjalizacja
                 if (matchStats) {
                     kda  = matchStats.kda;
                     cspm = matchStats.cspm;
-                    document.getElementById("user-kda").textContent  = `${kda}:1`;
-                    document.getElementById("user-cspm").textContent = `${cspm}`;
+                    document.getElementById("user-kda").textContent  = `${kda}:1`;//wyświetla kda
+                    document.getElementById("user-cspm").textContent = `${cspm}`;//wyświetla cs/min
                 } else {
                     document.getElementById("user-kda").textContent  = "Brak danych";
                     document.getElementById("user-cspm").textContent = "Brak danych";
                 }
 
-                userStats = { tier, division, lp, winrate, kda, cspm };
-                // Kiedy obie strony (user i iwanan) są pobrane, wywołujemy porównanie
-                reactToComparison();
+                userStats = { tier, division, lp, winrate, kda, cspm };//aktualizuje staty gracza
+                reactToComparison();//porównuje z iwanan
 
             } catch (err) {
                 alert("Błąd: " + err.message);
@@ -406,7 +384,7 @@
             }
         }
 
-        // Event nasłuchujący momentu załadowania okna. Inicjuje pobranie statystyk "Iwanana".
+        //na załadowaniu okna pobiera staty iwanana
         window.onload = fetchIwananData;
     </script>
 </body>
