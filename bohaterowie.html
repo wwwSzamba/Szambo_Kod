@@ -109,13 +109,13 @@ async function searchPlayer() {
         const puuid = accountData.puuid;//przydielamy puuid z accountData do odzielnego obiektu
 
         //pobieramy 10 id ostatnich meczów gracza
-        const matchIdsUrl = `https://${accountRouting}.api.riotgames.com/lol/match/v5/matches/by-puuid/${puuid}/ids?start=0&count=10&api_key=${API_KEY}`;
+        const matchIdsUrl = `https://${accountRouting}.api.riotgames.com/lol/match/v5/matches/by-puuid/${puuid}/ids?start=0&count=20&api_key=${API_KEY}`;
         const matchIds = await fetchProxy(matchIdsUrl);
 
         if (!Array.isArray(matchIds)) throw new Error('Błąd podczas pobierania historii meczów.');//sprawdza czy matchIds jest tablicą
         if (matchIds.length === 0) throw new Error('Ten gracz nie zagrał żadnych meczów w wybranym trybie.');//sprawdza czy był chociarz jeden rozegrany mecz
 
-        grid.innerHTML = 'Analizowanie ostatnich 10 meczów...';//wyświetla wiadomość o analizie
+        grid.innerHTML = 'Analizowanie ostatnich 20 meczów...';//wyświetla wiadomość o analizie
 
         //jednocześnie wysyłamy zapytanie o dane o każdy meczu
         const matchPromises = matchIds.map(id => {
