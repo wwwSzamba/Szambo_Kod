@@ -10,7 +10,7 @@ body {
     padding: 20px;
 }
 
-/* 1. Domyślny układ dla małych ekranów (Telefony) - 2 kolumny */
+/* Domyślny układ dla małych ekranów (Telefony) - 2 kolumny */
 .champion-grid {
     display: grid;
     grid-template-columns: repeat(2, 1fr);
@@ -27,7 +27,6 @@ body {
         gap: 18px;
     }
 }
-/* ---------------------------------- */
 
 .champion-image-container {
     display: flex;
@@ -36,36 +35,36 @@ body {
     background-color: var(--bg-card);
     padding: 8px;
     border-radius: 12px;
-    box-shadow: 0 4px 10px rgba(0,0,0,0.25);
+    box-shadow: 0 4px 10px rgba(0,0,0,0.25); /* Dodaje delikatny cień dla efektu głębi */
     border: none;
-    transition: transform 0.15s ease;
+    transition: transform 0.15s ease; /* Płynne przejście przy transformacji */
     width: 100%;
     max-width: 180px; 
     margin: 0 auto; /* Wyśrodkowanie karty w komórce grida */
 }
 
 .champion-image-container:hover {
-    transform: translateY(-3px);
+    transform: translateY(-3px); /* Wizualne podniesienie karty przy hoverze, aktywuje się po najechaniu myszką */
 }
 
-.image-wrapper {
-    position: relative;
+.image-wrapper { /* Kontener dla obrazka i nakładki */
+    position: relative; /* Dzięki temu overlay pozycjonuje się względem tego kontenera */
     width: 100%;
     aspect-ratio: 3 / 4;
-    overflow: hidden;
+    overflow: hidden; /* Ukrywa część obrazka wychodzącą poza kontener */
     border-radius: 10px;
 }
 
-.image-wrapper img {
+.image-wrapper img { /* Stylizacja obrazka */
     width: 100%;
     height: 100%;
-    object-fit: cover;
-    transition: opacity 0.2s ease, transform 0.2s ease;
+    object-fit: cover; /* Dzięki temu obrazek się nie rozciąga */
+    transition: opacity 0.2s ease, transform 0.2s ease; /* Płynne przejście przy zmianie przezroczystości i skalowania */
 }
 
 .overlay {
-    position: absolute;
-    inset: 0;
+    position: absolute; 
+    inset: 0; /* Skrót dla top: 0; right: 0; bottom: 0; left: 0; */
     background: rgba(0, 0, 0, 0.6);
     color: #ffffff;
     display: flex;
@@ -79,12 +78,12 @@ body {
     padding: 10px;
 }
 
-.image-wrapper:hover img {
+.image-wrapper:hover img { /* Po najechaniu na obrazek, obrazek staje się półprzezroczysty i lekko powiększony */
     opacity: 0.5;
     transform: scale(1.05);
 }
 
-.image-wrapper:hover .overlay {
+.image-wrapper:hover .overlay { /* Po najechaniu na obrazek, nakładka staje się widoczna */
     opacity: 1;
 }
 
