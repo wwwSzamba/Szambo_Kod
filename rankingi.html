@@ -63,8 +63,8 @@
         .ranking-grid {
             display: flex;
             flex-direction: column;
-            margin: 20px auto 50px auto; /* "auto" centruje element na środku */
-            max-width: 900px; /* Maksymalna szerokość tabeli, żeby nie rozciągała się  na cały ekran */
+            margin: 20px auto 50px auto; 
+            max-width: 900px; 
             width: 100%; 
         }
 
@@ -127,14 +127,14 @@
     <script>
         document.addEventListener('DOMContentLoaded', function() {
             // Klucz wygasa co 24 godziny, jest przypisany do konta deweloperskiego riotu i posiada limit zapytan 20/1s i 100/2min
-            const API_KEY = "RGAPI-16807741-f004-418b-b547-f9f038ac97bf"; 
+            const API_KEY = "RGAPI-ddf66fc1-27d1-48e3-ba9c-0d37ca9f595b"; 
 
             // In-memory cache zapobiegający redundancji zapytań sieciowych, przez to że riot narzuca limit zapytań, a dane o topce serwera zmieniają się co 24h więc nie ma po co odczytywac za każdym razem z sieci
             const cache = {}; 
             
             let allPlayers = [];      
             let displayedCount = 0;   
-            const LOAD_CHUNK = 100; // Renderujemy tylko 100 graczy na raz, aby uniknąć zamrożenia interfejsu podczas parsowania dużych tablic (Lazy Loading), Riot api daje 300 graczy w topce na region, więc 3 razy załaduj więcej i jest cała lista
+            const LOAD_CHUNK = 100; // Renderujemy tylko 100 graczy na raz, aby uniknąć zamrożenia interfejsu podczas parsowania dużych tablic (Lazy Loading), Riot api daje max 300 graczy w topce na region, więc 3 razy załaduj więcej i jest cała lista
             
             const listContainer = document.getElementById('challenger-list');
             const loadingText = document.getElementById('loading-text');
@@ -204,7 +204,7 @@
             function renderNextChunk() {
                 const endIndex = Math.min(displayedCount + LOAD_CHUNK, allPlayers.length); // w wiekszosci przypadkow wcztuje sie 300 graczy, ale w regionach mniejszych gdzie jest mniejszy playerbase
                                                                                             // sa przypadki ze np. tylko 250 graczy wczyta do allplayers.length, wtedy do ochrony przed wyjsciem poza 
-                                                                                            // zakres tablicy, przyjmuje mniejsza wartosc z dwoch, czyli albo 100 albo allPlayers.length
+                                                                                            // zakres tablicy, przyjmuje mniejsza wartosc z dwoch, czyli albo 100*n albo allPlayers.length
                 
                 for (let i = displayedCount; i < endIndex; i++) {
                     const player = allPlayers[i]; // przypisuje z tablicy allplayers gracza o indeksie i do player aby można było go odczytać 
