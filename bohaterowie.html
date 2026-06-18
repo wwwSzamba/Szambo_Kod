@@ -108,7 +108,7 @@ async function searchPlayer() {
         if (!accountData.puuid) throw new Error('Nie znaleziono gracza o podanym Riot ID.');
         const puuid = accountData.puuid;//przydielamy puuid z accountData do odzielnego obiektu
 
-        //pobieramy 10 id ostatnich meczów gracza
+        //pobieramy 20 id ostatnich meczów gracza
         const matchIdsUrl = `https://${accountRouting}.api.riotgames.com/lol/match/v5/matches/by-puuid/${puuid}/ids?start=0&count=20&api_key=${API_KEY}`;
         const matchIds = await fetchProxy(matchIdsUrl);
 
